@@ -1,2 +1,2 @@
 # AnimGrapher
-SImple and fun recreative animated grapher
+Simple and fun recreative animated mathematical curve grapher
