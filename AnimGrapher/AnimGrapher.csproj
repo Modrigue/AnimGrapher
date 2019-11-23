@@ -51,6 +51,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AleExpressionParser\AleExpression.cs" />
     <Compile Include="AleExpressionParser\AleLexer.cs" />
     <Compile Include="AleExpressionParser\AleOperations.cs" />
     <Compile Include="AleExpressionParser\AleOperationToken.cs" />
@@ -58,7 +59,6 @@
     <Compile Include="AleExpressionParser\AleParser_operations.cs" />
     <Compile Include="AleExpressionParser\AleString.cs" />
     <Compile Include="AleExpressionParser\AleTerm.cs" />
-    <Compile Include="AleExpression.cs" />
     <Compile Include="CurveType.cs" />
     <Compile Include="Dialogs\AboutDialog.cs">
       <SubType>Form</SubType>
@@ -73,7 +73,6 @@
       <DependentUpon>NameEquationDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="DrawType.cs" />
-    <Compile Include="ExpressionTools.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -83,6 +82,7 @@
     <Compile Include="ParametricCurveData.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tools\ExpressionTools.cs" />
     <Compile Include="Tools\HighResolutionTimer.cs" />
     <Compile Include="Tools\MultimediaTimer.cs" />
     <EmbeddedResource Include="Dialogs\AboutDialog.resx">
