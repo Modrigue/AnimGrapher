@@ -52,7 +52,7 @@
             // 
             this.buttonOk.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.buttonOk.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.buttonOk.Location = new System.Drawing.Point(190, 469);
+            this.buttonOk.Location = new System.Drawing.Point(190, 519);
             this.buttonOk.Name = "buttonOk";
             this.buttonOk.Size = new System.Drawing.Size(100, 30);
             this.buttonOk.TabIndex = 1;
@@ -144,10 +144,10 @@
             // 
             // labelFunctions
             // 
-            this.labelFunctions.Font = new System.Drawing.Font("Times New Roman", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelFunctions.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelFunctions.Location = new System.Drawing.Point(45, 391);
             this.labelFunctions.Name = "labelFunctions";
-            this.labelFunctions.Size = new System.Drawing.Size(400, 75);
+            this.labelFunctions.Size = new System.Drawing.Size(400, 105);
             this.labelFunctions.TabIndex = 9;
             this.labelFunctions.Text = resources.GetString("labelFunctions.Text");
             // 
@@ -226,7 +226,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(484, 511);
+            this.ClientSize = new System.Drawing.Size(484, 561);
             this.Controls.Add(this.linkLabel5);
             this.Controls.Add(this.linkLabel4);
             this.Controls.Add(this.linkLabel3);
@@ -245,9 +245,9 @@
             this.Controls.Add(this.buttonOk);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(500, 550);
+            this.MaximumSize = new System.Drawing.Size(500, 600);
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(500, 550);
+            this.MinimumSize = new System.Drawing.Size(500, 600);
             this.Name = "AboutDialog";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;

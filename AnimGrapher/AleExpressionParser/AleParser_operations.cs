@@ -2662,6 +2662,12 @@ namespace AleProjects.AleLexer.AleParser
                     Evaluator = BuiltinAbsFunction
                 });
 
+                AddOperation(new AleOperation(IgnoreCase ? "CEIL" : "Ceil")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinCeilingFunction
+                });
+
                 AddOperation(new AleOperation(IgnoreCase ? "CEILING" : "Ceiling")
                 {
                     Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
@@ -2678,6 +2684,12 @@ namespace AleProjects.AleLexer.AleParser
                 {
                     Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null), new Tuple<TypeCode, object>(TypeCode.Int32, 0) },
                     Evaluator = BuiltinRoundFunction
+                });
+
+                AddOperation(new AleOperation(IgnoreCase ? "TRUNC" : "Trunc")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinTruncateFunction
                 });
 
                 AddOperation(new AleOperation(IgnoreCase ? "TRUNCATE" : "Truncate")

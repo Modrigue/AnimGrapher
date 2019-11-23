@@ -118,7 +118,9 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="labelFunctions.Text" xml:space="preserve">
-    <value>+, -, *, /, ^, !, sin(x), cos(x), tan(x), sinh(x), cosh(x), tanh(x), asin(x), acos(x), atan(x), exp(x), ln(x), log(x), log2(x), log10(x), sqrt(x), pow(x, y), abs(x), ceiling(x), floor(x), round(x), truncate(x), frac(x), sign(x), fibo(x), min(x,y), max(x,y), rand(), rand(x), rand(x,y), gcd(x,y), lcm(x, y), h(x), isprime(x), pi, π, e, x mod y</value>
+    <value>+, -, *, /, ^, !,
+sin(x), cos(x), tan(x), sinh(x), cosh(x), tanh(x), asin(x), acos(x), atan(x), exp(x), ln(x), log(x), log2(x), log10(x), sqrt(x), pow(x, y),
+abs(x), ceil(x), ceiling(x), floor(x), round(x), trunc(x), truncate(x), frac(x), sign(x), fibo(x), min(x,y), max(x,y), rand(), rand(x), rand(x,y), gcd(x,y), lcm(x, y), h(x), isprime(x), pi, π, e, x mod y</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
