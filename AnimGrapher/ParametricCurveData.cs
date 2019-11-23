@@ -1,26 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 
 namespace AnimGrapher
 {
-    class ParametricCurveData
+    class CurveData
     {
-        String name = "";
+        private String name_ = "";
 
-        string xEquation = "";
-        string yEquation = "";
+        private CurveType curveType_ = CurveType.PARAMETRIC;
 
-        public double XMin = -2;
-        public double XMax =  2;
-        public double YMin = -2;
-        public double YMax =  2;
+        private string xtEquation_ = "";
+        private string ytEquation_ = "";
+        private string rtEquation_ = "";
+        private string yxEquation_ = "";
 
-        public double TMin = 0;
-        public double TMax = 6.283;     //2*Math.PI;
-        public double TStep = 0.01;
+        public double XVMin = -2;
+        public double XVMax =  2;
+        public double YVMin = -2;
+        public double YVMax =  2;
+
+        public double PMin = 0;
+        public double PMax = 6.283;     // 2*Math.PI;
+        public double PStep = 0.01;
 
         public double Thickness = 1;
 
@@ -28,121 +29,190 @@ namespace AnimGrapher
 
         public string Name
         {
-            get { return name; }
-            set { name = value; }
+            get { return name_; }
+            set { name_ = value; }
         }
 
-        public string XEquation
+        public CurveType Type
         {
-            get { return xEquation; }
-            set { xEquation = value; }
+            get { return curveType_; }
+            set { curveType_ = value; }
         }
 
-        public string YEquation
+        public string XtEquation
         {
-            get { return yEquation; }
-            set { yEquation = value; }
+            get { return xtEquation_; }
+            set { xtEquation_ = value; }
+        }
+
+        public string YtEquation
+        {
+            get { return ytEquation_; }
+            set { ytEquation_ = value; }
+        }
+
+        public string RtEquation
+        {
+            get { return rtEquation_; }
+            set { rtEquation_ = value; }
+        }
+
+        public string YxEquation
+        {
+            get { return yxEquation_; }
+            set { yxEquation_ = value; }
         }
 
         #endregion
 
-        public ParametricCurveData()
+        public CurveData()
         {
             // create default parametric curve data
         }
 
-        public ParametricCurveData(string name)
+        public CurveData(string name, CurveType curveType)
         {
-            this.name = name;
+            name_ = name;
+            curveType_ = curveType;
         }
 
-        public ParametricCurveData(string name, string xEquation, string yEquation)
+        public CurveData(string name, CurveType curveType, string equation1, string equation2)
         {
-            this.name = name;
+            name_ = name;
+            curveType_ = curveType;
 
-            this.xEquation = xEquation;
-            this.yEquation = yEquation;
+            switch (curveType)
+            {
+                case CurveType.PARAMETRIC:
+                    xtEquation_ = equation1;
+                    ytEquation_ = equation2;
+                    break;
+
+                case CurveType.POLAR:
+                    rtEquation_ = equation1;
+                    break;
+
+                case CurveType.CARTESIAN:
+                    yxEquation_ = equation1;
+                    break;
+            }
         }
 
         public void Clear()
         {
-            ParametricCurveData pcdDefault = new ParametricCurveData();
+            CurveData cdDefault = new CurveData();
 
-            name = pcdDefault.name;
+            name_ = cdDefault.name_;
+            curveType_ = cdDefault.curveType_;
 
-            xEquation = pcdDefault.xEquation;
-            yEquation = pcdDefault.yEquation;
+            xtEquation_ = cdDefault.xtEquation_;
+            ytEquation_ = cdDefault.ytEquation_;
+            rtEquation_ = cdDefault.rtEquation_;
+            yxEquation_ = cdDefault.yxEquation_;
 
-            XMin = pcdDefault.XMin;
-            XMax = pcdDefault.XMax;
-            YMin = pcdDefault.YMin;
-            YMax = pcdDefault.YMax;
+            XVMin = cdDefault.XVMin;
+            XVMax = cdDefault.XVMax;
+            YVMin = cdDefault.YVMin;
+            YVMax = cdDefault.YVMax;
 
-            TMin = pcdDefault.TMin;
-            TMax = pcdDefault.TMax;
-            TStep = pcdDefault.TStep;
+            PMin = cdDefault.PMin;
+            PMax = cdDefault.PMax;
+            PStep = cdDefault.PStep;
 
-            Thickness = pcdDefault.Thickness;
+            Thickness = cdDefault.Thickness;
         }
 
-        public ParametricCurveData Copy()
+        public CurveData Copy()
         {
-            ParametricCurveData pcdCopy = new ParametricCurveData();
+            CurveData cdCopy = new CurveData();
 
-            pcdCopy.Name = this.Name;
+            cdCopy.Name = this.Name;
+            cdCopy.Type = this.Type;
 
-            pcdCopy.XEquation = this.XEquation;
-            pcdCopy.YEquation = this.YEquation;
+            cdCopy.XtEquation = this.XtEquation;
+            cdCopy.YtEquation = this.YtEquation;
+            cdCopy.RtEquation = this.RtEquation;
+            cdCopy.YxEquation = this.YxEquation;
 
-            pcdCopy.XMin = this.XMin;
-            pcdCopy.XMax = this.XMax;
-            pcdCopy.YMin = this.YMin;
-            pcdCopy.YMax = this.YMax;
+            cdCopy.XVMin = this.XVMin;
+            cdCopy.XVMax = this.XVMax;
+            cdCopy.YVMin = this.YVMin;
+            cdCopy.YVMax = this.YVMax;
 
-            pcdCopy.TMin = this.TMin;
-            pcdCopy.TMax = this.TMax;
-            pcdCopy.TStep = this.TStep;
+            cdCopy.PMin = this.PMin;
+            cdCopy.PMax = this.PMax;
+            cdCopy.PStep = this.PStep;
 
-            pcdCopy.Thickness = this.Thickness;
+            cdCopy.Thickness = this.Thickness;
 
-            return pcdCopy;
+            return cdCopy;
         }
 
         public string GetDescription()
         {
             string desc = "";
-            ParametricCurveData pcdDefault = new ParametricCurveData();
+            CurveData cdDefault = new CurveData();
 
             // name mandatory
-            if (String.IsNullOrEmpty(name))
+            if (String.IsNullOrEmpty(name_))
                 return "";
-            desc += "[" + name + "]" + Environment.NewLine;
+            desc += "[" + name_ + "]" + Environment.NewLine;
+
+            desc += "type=" + curveType_.ToString().ToLower() + Environment.NewLine;
 
             // equations
-            desc += "x(t)=" + xEquation + Environment.NewLine;
-            desc += "y(t)=" + yEquation + Environment.NewLine;
+            switch (curveType_)
+            {
+                case CurveType.PARAMETRIC:
+                    desc += "x(t)=" + xtEquation_ + Environment.NewLine;
+                    desc += "y(t)=" + ytEquation_ + Environment.NewLine;
+                    break;
+
+                case CurveType.POLAR:
+                    desc += "r(t)=" + rtEquation_ + Environment.NewLine;
+                    break;
+
+                case CurveType.CARTESIAN:
+                    desc += "y(x)=" + yxEquation_ + Environment.NewLine;
+                    break;
+            }
 
             // write parameters values if different from default values
 
             CultureInfo culture = new CultureInfo("en-US");
 
-            if (XMin != pcdDefault.XMin)
-                desc += "x_min=" + XMin.ToString(culture) + Environment.NewLine;
-            if (XMax != pcdDefault.XMax)
-                desc += "x_max=" + XMax.ToString(culture) + Environment.NewLine;
-            if (YMin != pcdDefault.YMin)
-                desc += "y_min=" + YMin.ToString(culture) + Environment.NewLine;
-            if (YMax != pcdDefault.YMax)
-                desc += "y_max=" + YMax.ToString(culture) + Environment.NewLine;
+            if (XVMin != cdDefault.XVMin)
+                desc += "xv_min=" + XVMin.ToString(culture) + Environment.NewLine;
+            if (XVMax != cdDefault.XVMax)
+                desc += "xv_max=" + XVMax.ToString(culture) + Environment.NewLine;
+            if (YVMin != cdDefault.YVMin)
+                desc += "yv_min=" + YVMin.ToString(culture) + Environment.NewLine;
+            if (YVMax != cdDefault.YVMax)
+                desc += "yv_max=" + YVMax.ToString(culture) + Environment.NewLine;
 
-            if (TMin != pcdDefault.TMin)
-                desc += "t_min=" + TMin.ToString(culture) + Environment.NewLine;
-            if (TMax != pcdDefault.TMax)
-                desc += "t_max=" + TMax.ToString(culture) + Environment.NewLine;
-            if (TStep != pcdDefault.TStep)
-                desc += "t_step=" + TStep.ToString(culture) + Environment.NewLine;
+            switch (curveType_)
+            {
+                case CurveType.PARAMETRIC:
+                case CurveType.POLAR:
+                    if (PMin != cdDefault.PMin)
+                        desc += "t_min=" + PMin.ToString(culture) + Environment.NewLine;
+                    if (PMax != cdDefault.PMax)
+                        desc += "t_max=" + PMax.ToString(culture) + Environment.NewLine;
+                    if (PStep != cdDefault.PStep)
+                        desc += "t_step=" + PStep.ToString(culture) + Environment.NewLine;
+                    break;
 
-            if (Thickness != pcdDefault.Thickness)
+                case CurveType.CARTESIAN:
+                    if (PMin != cdDefault.PMin)
+                        desc += "x_min=" + PMin.ToString(culture) + Environment.NewLine;
+                    if (PMax != cdDefault.PMax)
+                        desc += "x_max=" + PMax.ToString(culture) + Environment.NewLine;
+                    if (PStep != cdDefault.PStep)
+                        desc += "x_step=" + PStep.ToString(culture) + Environment.NewLine;
+                    break;
+            }
+
+            if (Thickness != cdDefault.Thickness)
                 desc += "thickness=" + Thickness + Environment.NewLine;
 
             desc += Environment.NewLine;

@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text;
+//using System.Timers;
 using System.Windows.Forms;
+//using System.Windows.Threading;
 
 
 namespace AnimGrapher
@@ -45,11 +43,12 @@ namespace AnimGrapher
 
         // draw parameters
 
-        private double t;
-        private double tStep_ = 0.05;
-        private double tMin_ = 0;
-        private double tMax_ = 2 * Math.PI;
+        private double p_;
+        private double pStep_ = 0.05;
+        private double pMin_ = 0;
+        private double pMax_ = 2 * Math.PI;
 
+        private DrawType drawType_ = DrawType.PLOT;
         private float penWidth_ = 3;
 
         private Color drawColor_ = Color.Black;
@@ -62,17 +61,42 @@ namespace AnimGrapher
         private bool hasInitPoint_;
         private bool lastPoint_;
 
+        private bool showCoordsAtDraw_ = true;
+
         // timer objects
-        Timer timer_;
-        private int timerInterval_ = 1;
+
+        // archaic, slow, but stable
+        System.Windows.Forms.Timer timer_;
+        private int timerInterval_ = 1; // ms
+
+        // recursion depth error
+        //private System.Timers.Timer timer_;
+        //private int timerInterval_ = 1; // ms
+
+        // not 100% reliable
+        //DispatcherTimer timer_;
+        //private double timerInterval_ = 0.1; // ticks
+
+        // not 100% stable
+        //HighResolutionTimer timer_;
+        //private float timerInterval_ = 0.1f;
+
+        // random issue with CallbackOnCollectedDelegate with GC
+        //private MultimediaTimer timer_;
+        //private int timerInterval_ = 100;
 
         // expression objects
         private string xtExpr_ = "";
         private string ytExpr_ = "";
+        private string rtExpr_ = "";
+        private string yxExpr_ = "";
 
         // saved equations
         private string pathEquations_ = "AnimGrapherEquations.txt";
-        private List<ParametricCurveData> savedEquations_;
+        private List<CurveData> savedEquations_;
+
+        // curve type
+        private CurveType curveType_ = CurveType.PARAMETRIC;
 
         public MainForm()
         {
@@ -80,9 +104,9 @@ namespace AnimGrapher
             dpiX_ = graphics.DpiX;
             dpiY_ = graphics.DpiY;
 
-            #if DEBUG
-                MessageBox.Show("DPI: X = " + dpiX_ + ", Y = " + dpiY_);
-            #endif
+            //#if DEBUG
+            //    MessageBox.Show("DPI: X = " + dpiX_ + ", Y = " + dpiY_);
+            //#endif
 
             ExpressionTools.Init();
 
@@ -90,11 +114,27 @@ namespace AnimGrapher
             drawPen_ = new Pen(drawColor_);
 
             // setup timer
-            timer_ = new Timer();
+            timer_ = new System.Windows.Forms.Timer();
             timer_.Interval = timerInterval_;
             timer_.Tick += timer__Tick;
 
-            savedEquations_ = new List<ParametricCurveData>();
+            //timer_ = new System.Timers.Timer();
+            //timer_.Interval = timerInterval_;
+            //timer_.Elapsed += Timer__Elapsed;
+
+            //timer_ = new DispatcherTimer();
+            //timer_.Interval = TimeSpan.FromTicks((long)timerInterval_);
+            //timer_.Interval = TimeSpan.FromMilliseconds(timerInterval_);
+            //timer_.Tick += timer__Tick;
+
+            //timer_ = new HighResolutionTimer(timerInterval_);
+            //timer_.UseHighPriorityThread = true;
+            //timer_.Elapsed += timer__Tick;//Timer__Elapsed;
+
+            //timer_ = new MultimediaTimer() { Interval = timerInterval_ };
+            //timer_.Elapsed += timer__Tick;
+
+            savedEquations_ = new List<CurveData>();
 
             InitializeComponent();
 
@@ -130,9 +170,11 @@ namespace AnimGrapher
             //        ControlStyles.AllPaintingInWmPaint |
             //        ControlStyles.UserPaint, true);
 
+            comboboxCurveType.SelectedIndex = 0;
+            comboboxDrawType.SelectedIndex = 0;
+
             this.Refresh();
         }
-
 
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -160,8 +202,8 @@ namespace AnimGrapher
             this.ResumeLayout();
 
             // focus on x equation
-            this.ActiveControl = textboxXEq;
-            textboxXEq.Focus();
+            this.ActiveControl = textbox1Eq;
+            textbox1Eq.Focus();
         }
 
         private void updateComboboxCurves()
@@ -172,12 +214,15 @@ namespace AnimGrapher
             comboboxCurves.ValueMember = "Equation";
 
             // first item empty
-            ParametricCurveData pcdEmpty = new ParametricCurveData("<New>");
-            comboboxCurves.Items.Add(pcdEmpty);
+            CurveData cdEmpty = new CurveData("<New>", curveType_);
+            comboboxCurves.Items.Add(cdEmpty);
 
             // fill combobox
-            foreach (ParametricCurveData pcd in savedEquations_)
-                comboboxCurves.Items.Add(pcd);
+            foreach (CurveData cd in savedEquations_)
+            {
+                if (cd.Type == curveType_)
+                    comboboxCurves.Items.Add(cd);
+            }
         }
 
         #region Draw functions
@@ -328,8 +373,11 @@ namespace AnimGrapher
             // update pencil position
             int xPencil = currPoint.X - pictureboxPencil.Width / 2;
             int yPencil = currPoint.Y - pictureboxPencil.Height;
-            pictureboxPencil.Location = new Point(xPencil, yPencil);
-            pictureboxPencil.Visible = true;
+            pictureboxPencil.Invoke(new MethodInvoker(delegate
+            {
+                pictureboxPencil.Location = new Point(xPencil, yPencil);
+                pictureboxPencil.Visible = true;
+            }));
 
             // update image
             pictureboxGraph.Image = bitmapGraph_;
@@ -351,36 +399,49 @@ namespace AnimGrapher
 
             Point currPoint = new Point(xBox, yBox);
 
-            if (hasInitPoint_)
+            switch (drawType_)
             {
-                if (penWidth_ > 2)
-                {
-                    // draw rectangle joining current and previous point
-                    //int dx = currPoint.X - prevPoint_.X;
-                    //int dy = currPoint.Y - prevPoint_.Y;
-                    //float dist = (float)Math.Sqrt(dx * dx + dy * dy);
-                    //float ratio = penWidth_ / dist / 2;
-                    //float rdx = ratio * dx;
-                    //float rdy = ratio * dy;
-                    //Point[] points = new Point[4];
-                    //points[0].X = (int)(currPoint.X + rdy + 0.5);
-                    //points[0].Y = (int)(currPoint.Y - rdx + 0.5);
-                    //points[1].X = (int)(currPoint.X - rdy + 0.5);
-                    //points[1].Y = (int)(currPoint.Y + rdx + 0.5);
-                    //points[2].X = (int)(prevPoint_.X - rdy + 0.5);
-                    //points[2].Y = (int)(prevPoint_.Y + rdx + 0.5);
-                    //points[3].X = (int)(prevPoint_.X + rdy + 0.5);
-                    //points[3].Y = (int)(prevPoint_.Y - rdx + 0.5);
-                    //gGraph_.FillPolygon(drawBrush_, points);
+                case DrawType.LINE:
+                    if (hasInitPoint_)
+                    {
+                        if (penWidth_ > 2)
+                        {
+                            // draw rectangle joining current and previous point
+                            //int dx = currPoint.X - prevPoint_.X;
+                            //int dy = currPoint.Y - prevPoint_.Y;
+                            //float dist = (float)Math.Sqrt(dx * dx + dy * dy);
+                            //float ratio = penWidth_ / dist / 2;
+                            //float rdx = ratio * dx;
+                            //float rdy = ratio * dy;
+                            //Point[] points = new Point[4];
+                            //points[0].X = (int)(currPoint.X + rdy + 0.5);
+                            //points[0].Y = (int)(currPoint.Y - rdx + 0.5);
+                            //points[1].X = (int)(currPoint.X - rdy + 0.5);
+                            //points[1].Y = (int)(currPoint.Y + rdx + 0.5);
+                            //points[2].X = (int)(prevPoint_.X - rdy + 0.5);
+                            //points[2].Y = (int)(prevPoint_.Y + rdx + 0.5);
+                            //points[3].X = (int)(prevPoint_.X + rdy + 0.5);
+                            //points[3].Y = (int)(prevPoint_.Y - rdx + 0.5);
+                            //gGraph_.FillPolygon(drawBrush_, points);
 
+                            // draw current point as disc
+                            gGraph_.FillEllipse(drawBrush_,
+                                currPoint.X - penWidth_ / 2, currPoint.Y - penWidth_ / 2,
+                                penWidth_, penWidth_
+                            );
+                        }
+                        //else
+                        gGraph_.DrawLine(drawPen_, prevPoint_, currPoint);
+                    }
+                    break;
+
+                case DrawType.PLOT:
                     // draw current point as disc
                     gGraph_.FillEllipse(drawBrush_,
                         currPoint.X - penWidth_ / 2, currPoint.Y - penWidth_ / 2,
                         penWidth_, penWidth_
                     );
-                }
-                //else
-                    gGraph_.DrawLine(drawPen_, prevPoint_, currPoint);
+                    break;
             }
 
             // update pencil position if option enabled
@@ -388,7 +449,10 @@ namespace AnimGrapher
             {
                 int xPencil = currPoint.X - pictureboxPencil.Width / 2;
                 int yPencil = currPoint.Y - pictureboxPencil.Height;
-                pictureboxPencil.Location = new Point(xPencil, yPencil);
+                pictureboxPencil.Invoke(new MethodInvoker(delegate
+                {
+                    pictureboxPencil.Location = new Point(xPencil, yPencil);
+                }));
             }
 
             prevPoint_ = currPoint;
@@ -407,65 +471,144 @@ namespace AnimGrapher
 
                 double x = 0;
                 double y = 0;
+                double r = 0;
+
+                // polar curve specific: calculate r
+                if (curveType_ == CurveType.POLAR)
+                {
+                    try
+                    {
+                        r = ExpressionTools.Evaluate(rtExpr_, "t", p_);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.Message == "undefined")
+                        {
+                            if (showCoordsAtDraw_)
+                            {
+                                labelCoords.Text = Environment.NewLine;
+                                labelCoords.Text += "θ=" + p_.ToString("0.0000") + Environment.NewLine;
+                                labelCoords.Text += "r=<undef>";
+                            }
+
+                            p_ += pStep_;
+                            return;
+                        }
+                        else
+                        {
+                            stopDraw();
+                            string msg = "Error in expression r for t = " + p_.ToString(CultureInfo.GetCultureInfo("en-GB")) + ":" + Environment.NewLine;
+                            msg += Environment.NewLine;
+                            msg += ex.Message;
+                            MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    if (Double.IsNaN(r) || Double.IsNegativeInfinity(r) || Double.IsPositiveInfinity(r))
+                    {
+                        p_ += pStep_;
+                        return;
+                    }
+                }
 
                 // x
                 try
                 {
-                    x = ExpressionTools.Evaluate(xtExpr_, "t", t);
+                    switch (curveType_)
+                    {
+                        case CurveType.PARAMETRIC:
+                            x = ExpressionTools.Evaluate(xtExpr_, "t", p_);
+                            break;
+
+                        case CurveType.POLAR:
+                            x = r * Math.Cos(p_);
+                            break;
+
+                        case CurveType.CARTESIAN:
+                            x = p_;
+                            break;
+                    }
                 }
                 catch (Exception ex)
                 {
                     if (ex.Message == "undefined")
                     {
-                        labelCoords.Text = "t=" + t.ToString("0.0000") + "\n";
-                        labelCoords.Text += "x=<undef>";
+                        if (showCoordsAtDraw_)
+                        {
+                            labelCoords.Text = "t=" + p_.ToString("0.0000") + Environment.NewLine;
+                            labelCoords.Text += "x=<undef>";
+                        }
 
-                        t += tStep_;
+                        p_ += pStep_;
                         return;
                     }
                     else
                     {
                         stopDraw();
-                        string msg = "Error in expression x for t = " + t.ToString(CultureInfo.GetCultureInfo("en-GB")) + ":";
-                        msg += Environment.NewLine + Environment.NewLine;
+                        string msg = "Error in expression x for t = " + p_.ToString(CultureInfo.GetCultureInfo("en-GB")) + ":" + Environment.NewLine;
+                        msg += Environment.NewLine;
                         msg += ex.Message;
                         MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 if (Double.IsNaN(x) || Double.IsNegativeInfinity(x) || Double.IsPositiveInfinity(x))
                 {
-                    t += tStep_;
+                    p_ += pStep_;
                     return;
                 }
 
                 // y
                 try
                 {
-                    y = ExpressionTools.Evaluate(ytExpr_, "t", t);
+                    switch (curveType_)
+                    {
+                        case CurveType.PARAMETRIC:
+                            y = ExpressionTools.Evaluate(ytExpr_, "t", p_);
+                            break;
+
+                        case CurveType.POLAR:
+                            y = r * Math.Sin(p_);
+                            break;
+
+                        case CurveType.CARTESIAN:
+                            y = ExpressionTools.Evaluate(yxExpr_, "x", p_);
+                            break;
+                    }
                 }
                 catch (Exception ex)
                 {
                     if (ex.Message == "undefined")
                     {
-                        labelCoords.Text = "t=" + t.ToString("0.0000") + "\n";
-                        labelCoords.Text += "x=" + x.ToString("0.0000") + "\n";
-                        labelCoords.Text += "y=<undef>";
+                        if (showCoordsAtDraw_)
+                        {
+                            if (curveType_ == CurveType.PARAMETRIC)
+                                labelCoords.Text = "t=" + p_.ToString("0.0000") + Environment.NewLine;
+                            else
+                                labelCoords.Text = Environment.NewLine;
 
-                        t += tStep_;
+                            labelCoords.Text += "x=" + x.ToString("0.0000") + Environment.NewLine;
+                            labelCoords.Text += "y=<undef>";
+                        }
+
+                        p_ += pStep_;
                         return;
                     }
                     else
                     {
                         stopDraw();
-                        string msg = "Error in expression y for t = " + t.ToString(CultureInfo.GetCultureInfo("en-GB")) + ":";
-                        msg += Environment.NewLine + Environment.NewLine;
+
+                        string parameter = "t";
+                        if (curveType_ == CurveType.CARTESIAN)
+                            parameter = "x";
+
+                        string msg = "Error in expression y for " + parameter + " = " + p_.ToString(CultureInfo.GetCultureInfo("en-GB")) + ":" + Environment.NewLine;
+                        msg += Environment.NewLine;
                         msg += ex.Message;
                         MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 if (Double.IsNaN(y) || Double.IsNegativeInfinity(y) || Double.IsPositiveInfinity(y))
                 {
-                    t += tStep_;
+                    p_ += pStep_;
                     return;
                 }
 
@@ -479,9 +622,29 @@ namespace AnimGrapher
                     drawNextPoint(x, y, showPencil);
 
                 // display coordinates
-                labelCoords.Text = "t=" + t.ToString("0.0000") + "\n";
-                labelCoords.Text += "x=" + x.ToString("0.0000") + "\n";
-                labelCoords.Text += "y=" + y.ToString("0.0000");
+                if (showCoordsAtDraw_)
+                {
+                    switch (curveType_)
+                    {
+                        case CurveType.PARAMETRIC:
+                            labelCoords.Text = "t=" + p_.ToString("0.0000") + Environment.NewLine;
+                            labelCoords.Text += "x=" + x.ToString("0.0000") + Environment.NewLine;
+                            labelCoords.Text += "y=" + y.ToString("0.0000");
+                            break;
+
+                        case CurveType.POLAR:
+                            labelCoords.Text = Environment.NewLine;
+                            labelCoords.Text += "θ=" + p_.ToString("0.0000") + Environment.NewLine;
+                            labelCoords.Text += "r=" + r.ToString("0.0000");
+                            break;
+
+                        case CurveType.CARTESIAN:
+                            labelCoords.Text = Environment.NewLine;
+                            labelCoords.Text += "x=" + x.ToString("0.0000") + Environment.NewLine;
+                            labelCoords.Text += "y=" + y.ToString("0.0000");
+                            break;
+                    }
+                }
 
                 // stop if last point
                 if (lastPoint_)
@@ -491,13 +654,13 @@ namespace AnimGrapher
                 }
 
                 // last point reached?
-                if (t + tStep_ > tMax_)
+                if (p_ + pStep_ > pMax_)
                 {
-                    t = tMax_;
+                    p_ = pMax_;
                     lastPoint_ = true;
                 }
                 else
-                    t += tStep_;
+                    p_ += pStep_;
                 
                 //string drawTime = (DateTime.Now - startDate).TotalMilliseconds.ToString(); //.ToString(@"hh\:mm\:ss");
                 //Console.WriteLine("Draw time:" + drawTime);
@@ -515,16 +678,30 @@ namespace AnimGrapher
 
             // init draw parameters
             timer_.Stop();
-            labelCoords.Visible = false;
+            labelCoords.Invoke(new MethodInvoker(delegate { labelCoords.Visible = false; }));
             pictureboxPencil.Visible = false;
             hasInitPoint_ = false;
             lastPoint_ = false;
             updateDrawParams();
-            t = tMin_;
+            p_ = pMin_;
 
-            xtExpr_ = textboxXEq.Text;
-            ytExpr_ = textboxYEq.Text;
+            switch (curveType_)
+            {
+                case CurveType.PARAMETRIC:
+                    xtExpr_ = textbox1Eq.Text;
+                    ytExpr_ = textbox2Eq.Text;
+                    break;
 
+                case CurveType.POLAR:
+                    rtExpr_ = textbox1Eq.Text;
+                    break;
+
+                case CurveType.CARTESIAN:
+                    yxExpr_ = textbox1Eq.Text;
+                    break;
+            }
+
+            labelCoords.Text = "";
             labelCoords.Visible = true;
             //pictureboxPencil.Visible = true;
 
@@ -534,7 +711,7 @@ namespace AnimGrapher
             this.MaximizeBox = false;
 
             buttonClear.Enabled = true;
-            buttonStop.Enabled = true;
+            buttonStop.Invoke(new MethodInvoker(delegate { buttonStop.Enabled = true; }));
             buttonExport.Enabled = false;
             hasCleared_ = false;
             isDrawing_ = true;
@@ -545,15 +722,21 @@ namespace AnimGrapher
             timer_.Stop();
             hasPaused_ = false;
             isDrawing_ = false;
-            labelCoords.Visible = false;
-            pictureboxPencil.Visible = false;
-            buttonStop.Enabled = false;
+            //labelCoords.Visible = false;
+            labelCoords.Invoke(new MethodInvoker(delegate
+            {
+                labelCoords.Visible = false;
+            }));
+            //pictureboxPencil.Visible = false;
+            pictureboxPencil.Invoke(new MethodInvoker(delegate { pictureboxPencil.Visible = false; }));
+            //buttonStop.Enabled = false;
+            buttonStop.Invoke(new MethodInvoker(delegate { buttonStop.Enabled = false; }));
             updatePausePlayGUI(true);
-            buttonStop.Enabled = true;
 
             //enableAxisParameters(true);
             //this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox = true;
+            //this.MaximizeBox = true;
+            this.Invoke(new MethodInvoker(delegate { this.MaximizeBox = true; }));
             updateGUI();
         }
 
@@ -564,8 +747,8 @@ namespace AnimGrapher
         private void buttonSave_Click(object sender, EventArgs e)
         {
             // open save name dialog
-            ParametricCurveData curPCD = comboboxCurves.SelectedItem as ParametricCurveData;
-            string name = (curPCD.Name == "<New>") ? "Curve 1" : curPCD.Name;
+            CurveData curCD = comboboxCurves.SelectedItem as CurveData;
+            string name = (curCD.Name == "<New>") ? "Curve 1" : curCD.Name;
 
             NameEquationDialog dialog = new NameEquationDialog(name);
             if (dialog.ShowDialog() == DialogResult.OK)
@@ -574,18 +757,32 @@ namespace AnimGrapher
             
                 // build parametric curve data
 
-                ParametricCurveData curveData = new ParametricCurveData(name);
-                curveData.XEquation = textboxXEq.Text;
-                curveData.YEquation = textboxYEq.Text;
+                CurveData curveData = new CurveData(name, curveType_);
 
-                curveData.XMin = (double)numericupdownXMin.Value;
-                curveData.XMax = (double)numericupdownXMax.Value;
-                curveData.YMin = (double)numericupdownYMin.Value;
-                curveData.YMax = (double)numericupdownYMax.Value;
+                switch (curveType_)
+                {
+                    case CurveType.PARAMETRIC:
+                        curveData.XtEquation = textbox1Eq.Text;
+                        curveData.YtEquation = textbox2Eq.Text;
+                        break;
 
-                curveData.TMin = (double)numericupdownTMin.Value;
-                curveData.TMax = (double)numericupdownTMax.Value;
-                curveData.TStep = (double)numericupdownTStep.Value;
+                    case CurveType.POLAR:
+                        curveData.RtEquation = textbox1Eq.Text;
+                        break;
+
+                    case CurveType.CARTESIAN:
+                        curveData.YxEquation = textbox1Eq.Text;
+                        break;
+                }
+
+                curveData.XVMin = (double)numericupdownXMin.Value;
+                curveData.XVMax = (double)numericupdownXMax.Value;
+                curveData.YVMin = (double)numericupdownYMin.Value;
+                curveData.YVMax = (double)numericupdownYMax.Value;
+
+                curveData.PMin = (double)numericupdownPMin.Value;
+                curveData.PMax = (double)numericupdownPMax.Value;
+                curveData.PStep = (double)numericupdownPStep.Value;
 
                 curveData.Thickness = (double)numericupdownThickness.Value;
 
@@ -593,10 +790,10 @@ namespace AnimGrapher
                 bool exists = false;
                 int index = -1;
                 int indexCombobox = 0;
-                foreach (ParametricCurveData pcd in savedEquations_)
+                foreach (CurveData cd in savedEquations_)
                 {
                     index++;
-                    if (pcd.Name == name) // found
+                    if (cd.Name == name) // found
                     {
                         exists = true;
                         break;
@@ -612,7 +809,7 @@ namespace AnimGrapher
                     if (result == DialogResult.Yes)
                     {
                         savedEquations_[index] = curveData;
-                        indexCombobox = index + 1;
+                        indexCombobox = comboboxCurves.SelectedIndex; // index + 1;
                     }
                     else
                     {
@@ -622,13 +819,20 @@ namespace AnimGrapher
                 else
                 {
                     savedEquations_.Add(curveData);
-                    indexCombobox = savedEquations_.Count; // last index
+                    indexCombobox = comboboxCurves.Items.Count; // new last index
                 }
 
                 // update equations file and combo box
                 saveEquationsToFile(pathEquations_);
                 updateComboboxCurves();
-                comboboxCurves.SelectedIndex = indexCombobox;
+                try
+                {
+                    comboboxCurves.SelectedIndex = indexCombobox;
+                }
+                catch (Exception)
+                {
+                    //
+                }
 
                 MessageBox.Show("Equation \"" + name + "\" has been sucessfully saved to file " + Path.GetFullPath(pathEquations_) + ".", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);     
             }
@@ -636,14 +840,14 @@ namespace AnimGrapher
 
         private void buttonDelete_Click(object sender, EventArgs e)
         {
-            ParametricCurveData curPCD = comboboxCurves.SelectedItem as ParametricCurveData;
-            string name = curPCD.Name;
+            CurveData curCD = comboboxCurves.SelectedItem as CurveData;
+            string name = curCD.Name;
 
             string msg = "Are you sure to delete equation \"" + name + "\"?";
             DialogResult result = MessageBox.Show(msg, "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
             if (result == DialogResult.Yes)
             {
-                savedEquations_.Remove(curPCD);
+                savedEquations_.Remove(curCD);
 
                 // update equations file and combo box
                 saveEquationsToFile(pathEquations_);
@@ -656,7 +860,7 @@ namespace AnimGrapher
 
         private void buttonNewEquation_Click(object sender, EventArgs e)
         {
-            ParametricCurveData curveData = comboboxCurves.SelectedItem as ParametricCurveData;
+            CurveData curveData = comboboxCurves.SelectedItem as CurveData;
             bool wasNewEquation = (curveData.Name == "<New>");
 
             comboboxCurves.SelectedIndex = 0;
@@ -726,20 +930,23 @@ namespace AnimGrapher
             if (status)
             {
                 // pause activated, display play button
-                tooltip1.SetToolTip(buttonPausePlay, "Continue draw");
-                buttonPausePlay.Image = Properties.Resources.play_32;
-                buttonExport.Enabled = true;
+                buttonPausePlay.Invoke(new MethodInvoker(delegate {
+                    tooltip_.SetToolTip(buttonPausePlay, "Continue draw");
+                    buttonPausePlay.Image = Properties.Resources.play_32;
+                }));
+                buttonExport.Invoke(new MethodInvoker(delegate { buttonExport.Enabled = true; }));
                 hasPaused_ = true;
             }
             else
             {
                 // play activated, display pause button
-                tooltip1.SetToolTip(buttonPausePlay, "Pause draw");
-                buttonPausePlay.Image = Properties.Resources.pause_32;
-                buttonExport.Enabled = false;
+                buttonPausePlay.Invoke(new MethodInvoker(delegate {
+                    tooltip_.SetToolTip(buttonPausePlay, "Pause draw");
+                    buttonPausePlay.Image = Properties.Resources.pause_32;
+                }));
+                buttonExport.Invoke(new MethodInvoker(delegate { buttonExport.Enabled = false; }));
                 hasPaused_ = false;
             }
-        
         }
 
         private void buttonNextStep_Click(object sender, EventArgs e)
@@ -768,18 +975,18 @@ namespace AnimGrapher
             stopDraw();
         }
 
-        private void buttonCopyXEq_Click(object sender, EventArgs e)
+        private void buttonCopy1Eq_Click(object sender, EventArgs e)
         {
-            Clipboard.SetText(textboxXEq.Text);
-            textboxXEq.Focus();
-            textboxXEq.SelectAll();
+            Clipboard.SetText(textbox1Eq.Text);
+            textbox1Eq.Focus();
+            textbox1Eq.SelectAll();
         }
 
-        private void buttonCopyYEq_Click(object sender, EventArgs e)
+        private void buttonCopy2Eq_Click(object sender, EventArgs e)
         {
-            Clipboard.SetText(textboxYEq.Text);
-            textboxYEq.Focus();
-            textboxYEq.SelectAll();
+            Clipboard.SetText(textbox2Eq.Text);
+            textbox2Eq.Focus();
+            textbox2Eq.SelectAll();
         }
 
         private void buttonExport_Click(object sender, EventArgs e)
@@ -829,8 +1036,8 @@ namespace AnimGrapher
                 bmp = (Bitmap)bitmap.Clone();
             }
 
-            ParametricCurveData curPCD = comboboxCurves.SelectedItem as ParametricCurveData;
-            string defaultName = (curPCD.Name == "<New>") ? "Curve1" : curPCD.Name;
+            CurveData curCD = comboboxCurves.SelectedItem as CurveData;
+            string defaultName = (curCD.Name == "<New>") ? "Curve1" : curCD.Name;
 
             // save bitmap
             SaveFileDialog dialog = new SaveFileDialog();
@@ -839,7 +1046,7 @@ namespace AnimGrapher
             dialog.Filter = "JPEG - Image files|*.jpg|BMP - Bitmap files|*.bmp";
             dialog.FileName = defaultName;
 
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog() == DialogResult.OK)
             {
                 switch (dialog.FilterIndex)
                 {
@@ -899,37 +1106,37 @@ namespace AnimGrapher
             updateDrawParams();
             updateHints();
 
-            t = tMin_;
+            p_ = pMin_;
         }
 
         #region Draw parameters callbacks
 
-        private void numericupdownTMin_ValueChanged(object sender, EventArgs e)
+        private void numericupdownPMin_ValueChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
 
-        private void numericupdownTMin_TextChanged(object sender, EventArgs e)
+        private void numericupdownPMin_TextChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
 
-        private void numericupdownTMax_ValueChanged(object sender, EventArgs e)
+        private void numericupdownPMax_ValueChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
 
-        private void numericupdownTMax_TextChanged(object sender, EventArgs e)
+        private void numericupdownPMax_TextChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
 
-        private void numericupdownTStep_ValueChanged(object sender, EventArgs e)
+        private void numericupdownPStep_ValueChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
 
-        private void numericupdownTStep_TextChanged(object sender, EventArgs e)
+        private void numericupdownPStep_TextChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
@@ -947,13 +1154,13 @@ namespace AnimGrapher
         private void updateDrawParams()
         {
             // ensure coherency
-            numericupdownTMin.Maximum = numericupdownTMax.Value - numericupdownTMin.Increment;
-            numericupdownTMax.Minimum = numericupdownTMin.Value + numericupdownTMax.Increment;
+            numericupdownPMin.Maximum = numericupdownPMax.Value - numericupdownPMin.Increment;
+            numericupdownPMax.Minimum = numericupdownPMin.Value + numericupdownPMax.Increment;
 
             // update values
-            tMin_ = (double)numericupdownTMin.Value;
-            tMax_ = (double)numericupdownTMax.Value;
-            tStep_ = (double)numericupdownTStep.Value;
+            pMin_ = (double)numericupdownPMin.Value;
+            pMax_ = (double)numericupdownPMax.Value;
+            pStep_ = (double)numericupdownPStep.Value;
             penWidth_ = (float)numericupdownThickness.Value;
             drawPen_.Width = penWidth_;
         }
@@ -1139,26 +1346,110 @@ namespace AnimGrapher
             }  
         }
 
-        private void textboxXEq_TextChanged(object sender, EventArgs e)
+        private void textbox1Eq_TextChanged(object sender, EventArgs e)
         {
             updateGUI();
         }
 
-        private void textboxYEq_TextChanged(object sender, EventArgs e)
+        private void textbox2Eq_TextChanged(object sender, EventArgs e)
         {
             updateGUI();
         }
 
-        private void updateGUI()
+        private void updateGUI(bool curveTypeChanged = false)
         {
-            bool xExprValid = ExpressionTools.IsExpressionValid(textboxXEq.Text, "t");
-            bool yExprValid = ExpressionTools.IsExpressionValid(textboxYEq.Text, "t");
-            bool exprsValid = xExprValid && yExprValid;
+            bool exprsValid = false; // false
 
-            textboxXEq.BackColor = xExprValid ? SystemColors.Window : Color.MistyRose;
-            textboxYEq.BackColor = yExprValid ? SystemColors.Window : Color.MistyRose;
-            buttonCopyXEq.Enabled = xExprValid;
-            buttonCopyYEq.Enabled = yExprValid;
+            switch (curveType_)
+            {
+                case CurveType.PARAMETRIC:
+                    {
+                        if (curveTypeChanged)
+                        {
+                            label1Eq.Text = "x(t) =";
+                            label2Eq.Visible = true;
+                            textbox2Eq.Visible = true;
+                            buttonCopy2Eq.Visible = true;
+
+                            labelPMinMax.Text = "<   t  <";
+                            labelPStep.Text = "t step";
+                            tooltip_.SetToolTip(numericupdownPMin, "t minimum value");
+                            tooltip_.SetToolTip(numericupdownPMax, "t maximum value");
+                            tooltip_.SetToolTip(numericupdownPStep, "t draw step");
+
+                            rtExpr_ = "";
+                            yxExpr_ = "";
+                        }
+
+                        bool xtExprValid = ExpressionTools.IsExpressionValid(textbox1Eq.Text, "t");
+                        bool ytExprValid = ExpressionTools.IsExpressionValid(textbox2Eq.Text, "t");
+                        exprsValid = xtExprValid && ytExprValid;
+
+                        textbox1Eq.BackColor = xtExprValid ? SystemColors.Window : Color.MistyRose;
+                        textbox2Eq.BackColor = ytExprValid ? SystemColors.Window : Color.MistyRose;
+                        buttonCopy1Eq.Enabled = xtExprValid;
+                        buttonCopy2Eq.Enabled = ytExprValid;
+                    }
+                    break;
+
+                case CurveType.POLAR:
+                    {
+                        if (curveTypeChanged)
+                        {
+                            label1Eq.Text = "r(t) =";
+                            label2Eq.Visible = false;
+                            textbox2Eq.Text = "";
+                            textbox2Eq.Visible = false;
+                            buttonCopy2Eq.Visible = false;
+
+                            labelPMinMax.Text = "<   t  <";
+                            labelPStep.Text = "t step";
+                            tooltip_.SetToolTip(numericupdownPMin, "t minimum value");
+                            tooltip_.SetToolTip(numericupdownPMax, "t maximum value");
+                            tooltip_.SetToolTip(numericupdownPStep, "t draw step");
+
+                            xtExpr_ = "";
+                            ytExpr_ = "";
+                            yxExpr_ = "";
+                        }
+
+                        bool rExprValid = ExpressionTools.IsExpressionValid(textbox1Eq.Text, "t");
+                        exprsValid = rExprValid;
+
+                        textbox1Eq.BackColor = rExprValid ? SystemColors.Window : Color.MistyRose;
+                        buttonCopy1Eq.Enabled = rExprValid;
+                    }
+                    break;
+
+                case CurveType.CARTESIAN:
+                    {
+                        if (curveTypeChanged)
+                        {
+                            label1Eq.Text = "y(x) =";
+                            label2Eq.Visible = false;
+                            textbox2Eq.Text = "";
+                            textbox2Eq.Visible = false;
+                            buttonCopy2Eq.Visible = false;
+
+                            labelPMinMax.Text = "<   x  <";
+                            labelPStep.Text = "x step";
+                            tooltip_.SetToolTip(numericupdownPMin, "x minimum value");
+                            tooltip_.SetToolTip(numericupdownPMax, "x maximum value");
+                            tooltip_.SetToolTip(numericupdownPStep, "x draw step");
+
+                            xtExpr_ = "";
+                            ytExpr_ = "";
+                            rtExpr_ = "";
+                        }
+
+                        bool yxExprValid = ExpressionTools.IsExpressionValid(textbox1Eq.Text, "x");
+                        exprsValid = yxExprValid;
+
+                        textbox1Eq.BackColor = yxExprValid ? SystemColors.Window : Color.MistyRose;
+                        buttonCopy1Eq.Enabled = yxExprValid;
+                    }
+                    break;
+            }
 
             buttonDraw.Enabled = exprsValid;
             buttonNextStep.Enabled = exprsValid;
@@ -1196,6 +1487,53 @@ namespace AnimGrapher
             pictureboxGraph.Image = bitmapGraph_;
 
             numericupdownInterval.Enabled = (comboboxHints.SelectedIndex > 0);
+        }
+
+        private void comboboxCurveType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            CurveType curveTypeFormer = curveType_;
+            CurveType curveTypeNew = CurveType.PARAMETRIC; // default
+
+            switch (comboboxCurveType.SelectedItem.ToString().ToUpper())
+            {
+                case "PARAMETRIC":
+                    curveTypeNew = CurveType.PARAMETRIC;
+                    break;
+
+                case "POLAR":
+                    curveTypeNew = CurveType.POLAR;
+                    break;
+
+                case "CARTESIAN":
+                    curveTypeNew = CurveType.CARTESIAN;
+                    break;
+            }
+
+            // nop if type not changed
+            if (curveTypeNew == curveTypeFormer)
+                return;
+
+            // update GUI, with type changed
+            curveType_ = curveTypeNew;
+            updateGUI(true);
+
+            // update curves combo box
+            updateComboboxCurves();
+            comboboxCurves.SelectedIndex = 0;
+        }
+
+        private void comboboxDrawType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch (comboboxDrawType.SelectedItem.ToString().ToUpper())
+            {
+                case "LINE":
+                    drawType_ = DrawType.LINE;
+                    break;
+
+                case "PLOT":
+                    drawType_ = DrawType.PLOT;
+                    break;
+            }
         }
 
         #region Coordinates conversion
@@ -1249,19 +1587,33 @@ namespace AnimGrapher
                 timer_.Stop();
             }
 
-            ParametricCurveData curveData = comboboxCurves.SelectedItem as ParametricCurveData;
+            CurveData curveData = comboboxCurves.SelectedItem as CurveData;
             bool isNewEquation = (curveData.Name == "<New>");
 
-            textboxXEq.Text = curveData.XEquation;
-            textboxYEq.Text = curveData.YEquation;
+            switch (curveType_)
+            {
+                case CurveType.PARAMETRIC:
+                    textbox1Eq.Text = curveData.XtEquation;
+                    textbox2Eq.Text = curveData.YtEquation;
+                    xtExpr_ = textbox1Eq.Text;
+                    ytExpr_ = textbox2Eq.Text;
+                    break;
 
-            xtExpr_ = textboxXEq.Text;
-            ytExpr_ = textboxYEq.Text;
+                case CurveType.POLAR:
+                    textbox1Eq.Text = curveData.RtEquation;
+                    rtExpr_ = textbox1Eq.Text;
+                    break;
 
-            decimal xMin = (decimal)curveData.XMin;
-            decimal xMax = (decimal)curveData.XMax;
-            decimal yMin = (decimal)curveData.YMin;
-            decimal yMax = (decimal)curveData.YMax;
+                case CurveType.CARTESIAN:
+                    textbox1Eq.Text = curveData.YxEquation;
+                    yxExpr_ = textbox1Eq.Text;
+                    break;
+            }
+
+            decimal xMin = (decimal)curveData.XVMin;
+            decimal xMax = (decimal)curveData.XVMax;
+            decimal yMin = (decimal)curveData.YVMin;
+            decimal yMax = (decimal)curveData.YVMax;
 
             // if loading an equation with different border values, show choice dialog
             if (!isNewEquation)
@@ -1280,10 +1632,10 @@ namespace AnimGrapher
                         enableAxisParameters(true);
                         buttonClear.Enabled = false;
 
-                        numericupdownXMin.Value = (decimal)curveData.XMin;
-                        numericupdownXMax.Value = (decimal)curveData.XMax;
-                        numericupdownYMin.Value = (decimal)curveData.YMin;
-                        numericupdownYMax.Value = (decimal)curveData.YMax;
+                        numericupdownXMin.Value = (decimal)curveData.XVMin;
+                        numericupdownXMax.Value = (decimal)curveData.XVMax;
+                        numericupdownYMin.Value = (decimal)curveData.YVMin;
+                        numericupdownYMax.Value = (decimal)curveData.YVMax;
 
                         updateAxisParams();
                         clearGraph();
@@ -1297,17 +1649,16 @@ namespace AnimGrapher
             else
             {
                 // focus on x equation
-                this.ActiveControl = textboxXEq;
-                textboxXEq.Focus();
+                this.ActiveControl = textbox1Eq;
+                textbox1Eq.Focus();
             }
 
-            numericupdownTMin.Value = (decimal)curveData.TMin;
-            numericupdownTMax.Value = (decimal)curveData.TMax;
-            numericupdownTStep.Value = (decimal)curveData.TStep;
+            numericupdownPMin.Value = (decimal)curveData.PMin;
+            numericupdownPMax.Value = (decimal)curveData.PMax;
+            numericupdownPStep.Value = (decimal)curveData.PStep;
 
             numericupdownThickness.Value = (int)curveData.Thickness;
 
-            
             buttonSave.Text = isNewEquation ? "Save equation as..." : "Save equation";
             buttonDelete.Enabled = !isNewEquation;
         }
@@ -1317,7 +1668,7 @@ namespace AnimGrapher
         private void readEquationsFile(string filename)
         {
             string line;
-            ParametricCurveData pcd = new ParametricCurveData();
+            CurveData cd = new CurveData();
 
             // Read the file and process it line by line
             bool isNewEquation = false;
@@ -1332,12 +1683,12 @@ namespace AnimGrapher
                 if (line.StartsWith("[") && line.EndsWith("]"))
                 {
                     // push previous equation in list if existing
-                    if (!String.IsNullOrEmpty(pcd.Name))
-                        savedEquations_.Add(pcd.Copy());
+                    if (!String.IsNullOrEmpty(cd.Name))
+                        savedEquations_.Add(cd.Copy());
 
                     // create new equation
-                    pcd.Clear();
-                    pcd.Name = line.Substring(1, line.Length - 2);
+                    cd.Clear();
+                    cd.Name = line.Substring(1, line.Length - 2);
                     isNewEquation = true;
                     continue;
                 }
@@ -1354,42 +1705,86 @@ namespace AnimGrapher
                 CultureInfo culture = new CultureInfo("en-US");
                 switch (param.ToLower())
                 {
+                    case "type":
+                        switch (value.ToUpper())
+                        {
+                            case "PARAMETRIC":
+                                cd.Type = CurveType.PARAMETRIC;
+                                break;
+
+                            case "POLAR":
+                                cd.Type = CurveType.POLAR;
+                                break;
+
+                            case "CARTESIAN":
+                                cd.Type = CurveType.CARTESIAN;
+                                break;
+
+                            default:
+                                cd.Type = CurveType.PARAMETRIC;
+                                break;
+                        }
+                        break;
+                    
+                    // equations
                     case "x(t)":
-                        pcd.XEquation = value;
+                        cd.XtEquation = value;
                         break;
                     case "y(t)":
-                        pcd.YEquation = value;
+                        cd.YtEquation = value;
                         break;
-                    case "x_min":
-                        pcd.XMin = Convert.ToDouble(value, culture);
+                    case "r(t)":
+                        cd.RtEquation = value;
                         break;
-                    case "x_max":
-                        pcd.XMax = Convert.ToDouble(value, culture);
+                    case "y(x)":
+                        cd.YxEquation = value;
                         break;
-                    case "y_min":
-                        pcd.YMin = Convert.ToDouble(value, culture);
+                    
+                    // view
+                    case "xv_min":
+                        cd.XVMin = Convert.ToDouble(value, culture);
                         break;
-                    case "y_max":
-                        pcd.YMax = Convert.ToDouble(value, culture);
+                    case "xv_max":
+                        cd.XVMax = Convert.ToDouble(value, culture);
                         break;
+                    case "yv_min":
+                        cd.YVMin = Convert.ToDouble(value, culture);
+                        break;
+                    case "yv_max":
+                        cd.YVMax = Convert.ToDouble(value, culture);
+                        break;
+                    
+                    // parametric and polar curves
                     case "t_min":
-                        pcd.TMin = Convert.ToDouble(value, culture);
+                        cd.PMin = Convert.ToDouble(value, culture);
                         break;
                     case "t_max":
-                        pcd.TMax = Convert.ToDouble(value, culture);
+                        cd.PMax = Convert.ToDouble(value, culture);
                         break;
                     case "t_step":
-                        pcd.TStep = Convert.ToDouble(value, culture);
+                        cd.PStep = Convert.ToDouble(value, culture);
                         break;
+
+                    // cartesian curves
+                    case "x_min":
+                        cd.PMin = Convert.ToDouble(value, culture);
+                        break;
+                    case "x_max":
+                        cd.PMax = Convert.ToDouble(value, culture);
+                        break;
+                    case "x_step":
+                        cd.PStep = Convert.ToDouble(value, culture);
+                        break;
+
                     case "thickness":
-                        pcd.Thickness = Convert.ToInt32(value);
+                        cd.Thickness = Convert.ToInt32(value);
                         break;
                 }
             }
 
             // push last equation in list if existing
-            if (!String.IsNullOrEmpty(pcd.Name))
-                savedEquations_.Add(pcd.Copy());
+            if (!String.IsNullOrEmpty(cd.Name))
+                savedEquations_.Add(cd.Copy());
 
             file.Close();
         }
@@ -1398,13 +1793,13 @@ namespace AnimGrapher
         {
             string equationsDesc = "";
 
-            foreach (ParametricCurveData pcd in savedEquations_)
-                equationsDesc += pcd.GetDescription();
+            foreach (CurveData cd in savedEquations_)
+                equationsDesc += cd.GetDescription();
 
             File.WriteAllText(filename, equationsDesc);
         }
 
-        #if DEBUG
+#if DEBUG
             private void readExportConfigFile(string filename)
             {
                 string line;
@@ -1445,7 +1840,7 @@ namespace AnimGrapher
 
                 file.Close();
             }
-        #endif
+#endif
 
         #endregion
     }
