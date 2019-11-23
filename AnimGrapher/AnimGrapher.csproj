@@ -59,6 +59,7 @@
     <Compile Include="AleExpressionParser\AleParser_operations.cs" />
     <Compile Include="AleExpressionParser\AleString.cs" />
     <Compile Include="AleExpressionParser\AleTerm.cs" />
+    <Compile Include="CurveData.cs" />
     <Compile Include="CurveType.cs" />
     <Compile Include="Dialogs\AboutDialog.cs">
       <SubType>Form</SubType>
@@ -79,7 +80,6 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="ParametricCurveData.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tools\ExpressionTools.cs" />
