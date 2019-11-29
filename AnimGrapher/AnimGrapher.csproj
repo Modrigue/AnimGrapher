@@ -85,6 +85,7 @@
     <Compile Include="Tools\ExpressionTools.cs" />
     <Compile Include="Tools\HighResolutionTimer.cs" />
     <Compile Include="Tools\MultimediaTimer.cs" />
+    <Compile Include="View.cs" />
     <EmbeddedResource Include="Dialogs\AboutDialog.resx">
       <DependentUpon>AboutDialog.cs</DependentUpon>
     </EmbeddedResource>
@@ -136,9 +137,8 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>IF $(ConfigurationName) == Release (
-   xcopy /e /f /y $(SolutionDir)AnimGrapher\Config\* $(TargetDir)
-)</PostBuildEvent>
+    <PostBuildEvent>xcopy /e /f /y $(SolutionDir)AnimGrapher\Config\* $(TargetDir)
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

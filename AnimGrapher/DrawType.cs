@@ -4,6 +4,6 @@
     {
         LINE,
 
-        PLOT
+        DOT
     }
 }

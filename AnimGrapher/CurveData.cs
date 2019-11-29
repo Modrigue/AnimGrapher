@@ -14,14 +14,16 @@ namespace AnimGrapher
         private string rtEquation_ = "";
         private string yxEquation_ = "";
 
-        public double XVMin = -2;
-        public double XVMax =  2;
-        public double YVMin = -2;
-        public double YVMax =  2;
+        public bool Isometric = true;
 
-        public double PMin = 0;
-        public double PMax = 6.283;     // 2*Math.PI;
-        public double PStep = 0.01;
+        public double XVmin = -2;
+        public double XVmax =  2;
+        public double YVmin = -2;
+        public double YVmax =  2;
+
+        public double Pmin = 0;
+        public double Pmax = 6.283;     // 2*Math.PI;
+        public double Pstep = 0.01;
 
         public double Thickness = 1;
 
@@ -70,10 +72,11 @@ namespace AnimGrapher
             // create default parametric curve data
         }
 
-        public CurveData(string name, CurveType curveType)
+        public CurveData(string name, CurveType curveType, bool isometric)
         {
             name_ = name;
             curveType_ = curveType;
+            Isometric = isometric;
         }
 
         public CurveData(string name, CurveType curveType, string equation1, string equation2)
@@ -109,15 +112,16 @@ namespace AnimGrapher
             ytEquation_ = cdDefault.ytEquation_;
             rtEquation_ = cdDefault.rtEquation_;
             yxEquation_ = cdDefault.yxEquation_;
+            Isometric = cdDefault.Isometric;
 
-            XVMin = cdDefault.XVMin;
-            XVMax = cdDefault.XVMax;
-            YVMin = cdDefault.YVMin;
-            YVMax = cdDefault.YVMax;
+            XVmin = cdDefault.XVmin;
+            XVmax = cdDefault.XVmax;
+            YVmin = cdDefault.YVmin;
+            YVmax = cdDefault.YVmax;
 
-            PMin = cdDefault.PMin;
-            PMax = cdDefault.PMax;
-            PStep = cdDefault.PStep;
+            Pmin = cdDefault.Pmin;
+            Pmax = cdDefault.Pmax;
+            Pstep = cdDefault.Pstep;
 
             Thickness = cdDefault.Thickness;
         }
@@ -134,14 +138,15 @@ namespace AnimGrapher
             cdCopy.RtEquation = this.RtEquation;
             cdCopy.YxEquation = this.YxEquation;
 
-            cdCopy.XVMin = this.XVMin;
-            cdCopy.XVMax = this.XVMax;
-            cdCopy.YVMin = this.YVMin;
-            cdCopy.YVMax = this.YVMax;
+            cdCopy.Isometric = this.Isometric;
+            cdCopy.XVmin = this.XVmin;
+            cdCopy.XVmax = this.XVmax;
+            cdCopy.YVmin = this.YVmin;
+            cdCopy.YVmax = this.YVmax;
 
-            cdCopy.PMin = this.PMin;
-            cdCopy.PMax = this.PMax;
-            cdCopy.PStep = this.PStep;
+            cdCopy.Pmin = this.Pmin;
+            cdCopy.Pmax = this.Pmax;
+            cdCopy.Pstep = this.Pstep;
 
             cdCopy.Thickness = this.Thickness;
 
@@ -181,34 +186,42 @@ namespace AnimGrapher
 
             CultureInfo culture = new CultureInfo("en-US");
 
-            if (XVMin != cdDefault.XVMin)
-                desc += "xv_min=" + XVMin.ToString(culture) + Environment.NewLine;
-            if (XVMax != cdDefault.XVMax)
-                desc += "xv_max=" + XVMax.ToString(culture) + Environment.NewLine;
-            if (YVMin != cdDefault.YVMin)
-                desc += "yv_min=" + YVMin.ToString(culture) + Environment.NewLine;
-            if (YVMax != cdDefault.YVMax)
-                desc += "yv_max=" + YVMax.ToString(culture) + Environment.NewLine;
+            if (!Isometric)
+                desc += "isometric=" + Isometric.ToString(culture) + Environment.NewLine;
+
+            // if isometric, do not save x min and max
+            if (!Isometric)
+            {
+                if (XVmin != cdDefault.XVmin)
+                    desc += "xv_min=" + XVmin.ToString(culture) + Environment.NewLine;
+                if (XVmax != cdDefault.XVmax)
+                    desc += "xv_max=" + XVmax.ToString(culture) + Environment.NewLine;
+            }
+
+            if (YVmin != cdDefault.YVmin)
+                desc += "yv_min=" + YVmin.ToString(culture) + Environment.NewLine;
+            if (YVmax != cdDefault.YVmax)
+                desc += "yv_max=" + YVmax.ToString(culture) + Environment.NewLine;
 
             switch (curveType_)
             {
                 case CurveType.PARAMETRIC:
                 case CurveType.POLAR:
-                    if (PMin != cdDefault.PMin)
-                        desc += "t_min=" + PMin.ToString(culture) + Environment.NewLine;
-                    if (PMax != cdDefault.PMax)
-                        desc += "t_max=" + PMax.ToString(culture) + Environment.NewLine;
-                    if (PStep != cdDefault.PStep)
-                        desc += "t_step=" + PStep.ToString(culture) + Environment.NewLine;
+                    if (Pmin != cdDefault.Pmin)
+                        desc += "t_min=" + Pmin.ToString(culture) + Environment.NewLine;
+                    if (Pmax != cdDefault.Pmax)
+                        desc += "t_max=" + Pmax.ToString(culture) + Environment.NewLine;
+                    if (Pstep != cdDefault.Pstep)
+                        desc += "t_step=" + Pstep.ToString(culture) + Environment.NewLine;
                     break;
 
                 case CurveType.CARTESIAN:
-                    if (PMin != cdDefault.PMin)
-                        desc += "x_min=" + PMin.ToString(culture) + Environment.NewLine;
-                    if (PMax != cdDefault.PMax)
-                        desc += "x_max=" + PMax.ToString(culture) + Environment.NewLine;
-                    if (PStep != cdDefault.PStep)
-                        desc += "x_step=" + PStep.ToString(culture) + Environment.NewLine;
+                    if (Pmin != cdDefault.Pmin)
+                        desc += "x_min=" + Pmin.ToString(culture) + Environment.NewLine;
+                    if (Pmax != cdDefault.Pmax)
+                        desc += "x_max=" + Pmax.ToString(culture) + Environment.NewLine;
+                    if (Pstep != cdDefault.Pstep)
+                        desc += "x_step=" + Pstep.ToString(culture) + Environment.NewLine;
                     break;
             }
 
@@ -218,6 +231,24 @@ namespace AnimGrapher
             desc += Environment.NewLine;
 
             return desc;
+        }
+
+        // NOTE: duplicated code
+        public void UpdateGivenY(int width, int height)
+        {
+            if (!Isometric)
+                return;
+
+            // maintain x center
+            double xCenter = 0.5 * (XVmin + XVmax);
+
+            // compute new x range
+            double yRange = YVmax - YVmin;
+            double xRangeNew = yRange * (double)width / (double)height;
+
+            // compute new x min and max
+            XVmin = xCenter - 0.5 * xRangeNew;
+            XVmax = xCenter + 0.5 * xRangeNew;
         }
     }
 }

@@ -63,8 +63,8 @@
             this.textbox2Eq = new System.Windows.Forms.TextBox();
             this.textbox1Eq = new System.Windows.Forms.TextBox();
             this.buttonDrawColor = new System.Windows.Forms.Button();
-            this.labelInterval = new System.Windows.Forms.Label();
-            this.numericupdownInterval = new System.Windows.Forms.NumericUpDown();
+            this.labelUnit = new System.Windows.Forms.Label();
+            this.numericupdownUnit = new System.Windows.Forms.NumericUpDown();
             this.labelYMinMax = new System.Windows.Forms.Label();
             this.numericupdownYMax = new System.Windows.Forms.NumericUpDown();
             this.labelXMinMax = new System.Windows.Forms.Label();
@@ -86,7 +86,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxPencil)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxGraph)).BeginInit();
             this.panelControl.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericupdownInterval)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericupdownUnit)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericupdownYMax)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericupdownYMin)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericupdownXMax)).BeginInit();
@@ -147,7 +147,6 @@
             this.labelCoords.Name = "labelCoords";
             this.labelCoords.Size = new System.Drawing.Size(84, 41);
             this.labelCoords.TabIndex = 3;
-            this.labelCoords.Text = "";
             this.labelCoords.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // pictureboxGraph
@@ -161,8 +160,12 @@
             this.pictureboxGraph.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureboxGraph.TabIndex = 2;
             this.pictureboxGraph.TabStop = false;
+            this.pictureboxGraph.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pictureboxGraph_MouseClick);
+            this.pictureboxGraph.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.pictureboxGraph_MouseDoubleClick);
+            this.pictureboxGraph.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureboxGraph_MouseDown);
             this.pictureboxGraph.MouseLeave += new System.EventHandler(this.pictureboxGraph_MouseLeave);
             this.pictureboxGraph.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureboxGraph_MouseMove);
+            this.pictureboxGraph.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureboxGraph_MouseUp);
             // 
             // panelControl
             // 
@@ -193,8 +196,8 @@
             this.panelControl.Controls.Add(this.textbox2Eq);
             this.panelControl.Controls.Add(this.textbox1Eq);
             this.panelControl.Controls.Add(this.buttonDrawColor);
-            this.panelControl.Controls.Add(this.labelInterval);
-            this.panelControl.Controls.Add(this.numericupdownInterval);
+            this.panelControl.Controls.Add(this.labelUnit);
+            this.panelControl.Controls.Add(this.numericupdownUnit);
             this.panelControl.Controls.Add(this.labelYMinMax);
             this.panelControl.Controls.Add(this.numericupdownYMax);
             this.panelControl.Controls.Add(this.labelXMinMax);
@@ -234,7 +237,7 @@
             this.comboboxDrawType.FormattingEnabled = true;
             this.comboboxDrawType.Items.AddRange(new object[] {
             "Line",
-            "Plot"});
+            "Dots"});
             this.comboboxDrawType.Location = new System.Drawing.Point(317, 118);
             this.comboboxDrawType.Name = "comboboxDrawType";
             this.comboboxDrawType.Size = new System.Drawing.Size(45, 21);
@@ -440,7 +443,7 @@
             // 
             this.labelHints.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.labelHints.AutoSize = true;
-            this.labelHints.Location = new System.Drawing.Point(179, 122);
+            this.labelHints.Location = new System.Drawing.Point(189, 122);
             this.labelHints.Name = "labelHints";
             this.labelHints.Size = new System.Drawing.Size(31, 13);
             this.labelHints.TabIndex = 29;
@@ -570,44 +573,44 @@
             this.buttonDrawColor.UseVisualStyleBackColor = false;
             this.buttonDrawColor.Click += new System.EventHandler(this.buttonDrawColor_Click);
             // 
-            // labelInterval
+            // labelUnit
             // 
-            this.labelInterval.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.labelInterval.AutoSize = true;
-            this.labelInterval.Location = new System.Drawing.Point(179, 90);
-            this.labelInterval.Name = "labelInterval";
-            this.labelInterval.Size = new System.Drawing.Size(42, 13);
-            this.labelInterval.TabIndex = 18;
-            this.labelInterval.Text = "Interval";
+            this.labelUnit.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.labelUnit.AutoSize = true;
+            this.labelUnit.Location = new System.Drawing.Point(189, 90);
+            this.labelUnit.Name = "labelUnit";
+            this.labelUnit.Size = new System.Drawing.Size(26, 13);
+            this.labelUnit.TabIndex = 18;
+            this.labelUnit.Text = "Unit";
             // 
-            // numericupdownInterval
+            // numericupdownUnit
             // 
-            this.numericupdownInterval.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.numericupdownInterval.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.numericupdownInterval.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.numericupdownInterval.DecimalPlaces = 2;
-            this.numericupdownInterval.Enabled = false;
-            this.numericupdownInterval.Increment = new decimal(new int[] {
+            this.numericupdownUnit.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.numericupdownUnit.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.numericupdownUnit.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.numericupdownUnit.DecimalPlaces = 2;
+            this.numericupdownUnit.Enabled = false;
+            this.numericupdownUnit.Increment = new decimal(new int[] {
             1,
             0,
             0,
             131072});
-            this.numericupdownInterval.Location = new System.Drawing.Point(223, 88);
-            this.numericupdownInterval.Minimum = new decimal(new int[] {
+            this.numericupdownUnit.Location = new System.Drawing.Point(223, 88);
+            this.numericupdownUnit.Minimum = new decimal(new int[] {
             1,
             0,
             0,
             131072});
-            this.numericupdownInterval.Name = "numericupdownInterval";
-            this.numericupdownInterval.Size = new System.Drawing.Size(54, 20);
-            this.numericupdownInterval.TabIndex = 5;
-            this.tooltip_.SetToolTip(this.numericupdownInterval, "x,y graphical hints interval");
-            this.numericupdownInterval.Value = new decimal(new int[] {
+            this.numericupdownUnit.Name = "numericupdownUnit";
+            this.numericupdownUnit.Size = new System.Drawing.Size(54, 20);
+            this.numericupdownUnit.TabIndex = 5;
+            this.tooltip_.SetToolTip(this.numericupdownUnit, "x,y graphical hints interval");
+            this.numericupdownUnit.Value = new decimal(new int[] {
             5,
             0,
             0,
             65536});
-            this.numericupdownInterval.ValueChanged += new System.EventHandler(this.numericupdownInterval_ValueChanged);
+            this.numericupdownUnit.ValueChanged += new System.EventHandler(this.numericupdownUnit_ValueChanged);
             // 
             // labelYMinMax
             // 
@@ -939,7 +942,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureboxGraph)).EndInit();
             this.panelControl.ResumeLayout(false);
             this.panelControl.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericupdownInterval)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericupdownUnit)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericupdownYMax)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericupdownYMin)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericupdownXMax)).EndInit();
@@ -974,8 +977,8 @@
         private System.Windows.Forms.Panel panelGraph;
         private System.Windows.Forms.Label labelCoords;
         private System.Windows.Forms.PictureBox pictureboxPencil;
-        private System.Windows.Forms.Label labelInterval;
-        private System.Windows.Forms.NumericUpDown numericupdownInterval;
+        private System.Windows.Forms.Label labelUnit;
+        private System.Windows.Forms.NumericUpDown numericupdownUnit;
         private System.Windows.Forms.ColorDialog colorDialog1;
         private System.Windows.Forms.Button buttonDrawColor;
         private System.Windows.Forms.TextBox textbox2Eq;

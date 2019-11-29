@@ -25,13 +25,6 @@ namespace AnimGrapher
             private int hExport_ = 0;
         #endif
 
-        // display axis variables
-        private double X_MIN = -2;
-        private double X_MAX = +2;
-        private double Y_MIN = -2;
-        private double Y_MAX = +2;
-        private double interval_ = 0.5;
-
         Graphics gGraph_;
         Bitmap bitmapGraph_;
         int wBaseBox_;
@@ -43,12 +36,14 @@ namespace AnimGrapher
 
         // draw parameters
 
+        private View view_;
+
         private double p_;
         private double pStep_ = 0.05;
         private double pMin_ = 0;
         private double pMax_ = 2 * Math.PI;
 
-        private DrawType drawType_ = DrawType.PLOT;
+        private DrawType drawType_ = DrawType.DOT;
         private float penWidth_ = 3;
 
         private Color drawColor_ = Color.Black;
@@ -62,6 +57,15 @@ namespace AnimGrapher
         private bool lastPoint_;
 
         private bool showCoordsAtDraw_ = true;
+
+        private bool isUpdatingOtherNumericUpDown_ = false;
+
+        private bool mouseCanMoveGraph_ = true;
+        private bool mouseButtonOnGraphDown_ = false;
+        private double mouseButtonOnGraphX_;
+        private double mouseButtonOnGraphY_;
+        private int mouseButtonOnGraphXScreen_;
+        private int mouseButtonOnGraphYScreen_;
 
         // timer objects
 
@@ -100,6 +104,8 @@ namespace AnimGrapher
 
         public MainForm()
         {
+            view_ = new View();
+
             Graphics graphics = this.CreateGraphics();
             dpiX_ = graphics.DpiX;
             dpiY_ = graphics.DpiY;
@@ -119,19 +125,19 @@ namespace AnimGrapher
             timer_.Tick += timer__Tick;
 
             //timer_ = new System.Timers.Timer();
-            //timer_.Interval = timerInterval_;
+            //timer_.Interval = timerview_.Interval;
             //timer_.Elapsed += Timer__Elapsed;
 
             //timer_ = new DispatcherTimer();
-            //timer_.Interval = TimeSpan.FromTicks((long)timerInterval_);
-            //timer_.Interval = TimeSpan.FromMilliseconds(timerInterval_);
+            //timer_.Interval = TimeSpan.FromTicks((long)timerview_.Interval);
+            //timer_.Interval = TimeSpan.FromMilliseconds(timerview_.Interval);
             //timer_.Tick += timer__Tick;
 
-            //timer_ = new HighResolutionTimer(timerInterval_);
+            //timer_ = new HighResolutionTimer(timerview_.Interval);
             //timer_.UseHighPriorityThread = true;
             //timer_.Elapsed += timer__Tick;//Timer__Elapsed;
 
-            //timer_ = new MultimediaTimer() { Interval = timerInterval_ };
+            //timer_ = new MultimediaTimer() { Interval = timerview_.Interval };
             //timer_.Elapsed += timer__Tick;
 
             savedEquations_ = new List<CurveData>();
@@ -140,19 +146,6 @@ namespace AnimGrapher
 
             wBaseBox_ = pictureboxGraph.Width;
             hBaseBox_ = pictureboxGraph.Height;
-
-            // deactivated (causes issues during edition): parameters additional callbacks
-
-            //numericupdownXMin.TextChanged += new EventHandler(numericupdownXMin_TextChanged);
-            //numericupdownXMax.TextChanged += new EventHandler(numericupdownXMax_TextChanged);
-            //numericupdownYMin.TextChanged += new EventHandler(numericupdownYMin_TextChanged);
-            //numericupdownYMax.TextChanged += new EventHandler(numericupdownYMax_TextChanged);
-            //numericupdownInterval.TextChanged += new EventHandler(numericupdownInterval_TextChanged);
-
-            //numericupdownTMin.TextChanged += new EventHandler(numericupdownTMin_TextChanged);
-            //numericupdownTMax.TextChanged += new EventHandler(numericupdownTMax_TextChanged);
-            //numericupdownTStep.TextChanged += new EventHandler(numericupdownTStep_TextChanged);
-            //numericupdownThickness.TextChanged += new EventHandler(numericupdownThickness_TextChanged);
 
             pictureboxPencil.Parent = pictureboxGraph;
             panelGraph.BackColor = backColor_;
@@ -172,6 +165,14 @@ namespace AnimGrapher
 
             comboboxCurveType.SelectedIndex = 0;
             comboboxDrawType.SelectedIndex = 0;
+
+            // update view
+
+            //view_.Isometric = false;
+            if (view_.Isometric)
+                view_.UpdateGivenY(wBaseBox_, hBaseBox_);
+
+            updateViewDisplay();
 
             this.Refresh();
         }
@@ -193,15 +194,14 @@ namespace AnimGrapher
             }
 
             comboboxHints.SelectedIndex = 0; // default: none
-            //comboboxHints.SelectedIndex = 1; // default: axis
 
-            updateAxisParams();
+            updateViewDisplay();
             clearGraph();
             updateGUI();
 
             this.ResumeLayout();
 
-            // focus on x equation
+            // focus on 1st equation
             this.ActiveControl = textbox1Eq;
             textbox1Eq.Focus();
         }
@@ -214,7 +214,7 @@ namespace AnimGrapher
             comboboxCurves.ValueMember = "Equation";
 
             // first item empty
-            CurveData cdEmpty = new CurveData("<New>", curveType_);
+            CurveData cdEmpty = new CurveData("<New>", curveType_, view_.Isometric);
             comboboxCurves.Items.Add(cdEmpty);
 
             // fill combobox
@@ -245,7 +245,7 @@ namespace AnimGrapher
             int markLength = 5;
 
             // x > 0
-            for (double xMark = interval_; xMark <= X_MAX; xMark += interval_)
+            for (double xMark = view_.Xunit; xMark <= view_.Xmax; xMark += view_.Xunit)
             {
                 coords = convertXYToScreenCoords(xMark, 0);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -255,7 +255,7 @@ namespace AnimGrapher
             }
 
             // x < 0
-            for (double xMark = -interval_; xMark >= X_MIN; xMark -= interval_)
+            for (double xMark = -view_.Xunit; xMark >= view_.Xmin; xMark -= view_.Xunit)
             {
                 coords = convertXYToScreenCoords(xMark, 0);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -265,7 +265,7 @@ namespace AnimGrapher
             }
 
             // y > 0
-            for (double yMark = interval_; yMark <= Y_MAX; yMark += interval_)
+            for (double yMark = view_.Xunit; yMark <= view_.Ymax; yMark += view_.Xunit)
             {
                 coords = convertXYToScreenCoords(0, yMark);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -275,7 +275,7 @@ namespace AnimGrapher
             }
 
             // y < 0
-            for (double yMark = -interval_; yMark >= Y_MIN; yMark -= interval_)
+            for (double yMark = -view_.Xunit; yMark >= view_.Ymin; yMark -= view_.Xunit)
             {
                 coords = convertXYToScreenCoords(0, yMark);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -299,7 +299,7 @@ namespace AnimGrapher
             Pen gridPen = new Pen(gridBrush);
 
             // x > 0
-            for (double xMark = interval_; xMark <= X_MAX; xMark += interval_)
+            for (double xMark = view_.Xunit; xMark <= view_.Xmax; xMark += view_.Xunit)
             {
                 coords = convertXYToScreenCoords(xMark, 0);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -309,7 +309,7 @@ namespace AnimGrapher
             }
 
             // x < 0
-            for (double xMark = -interval_; xMark >= X_MIN; xMark -= interval_)
+            for (double xMark = -view_.Xunit; xMark >= view_.Xmin; xMark -= view_.Xunit)
             {
                 coords = convertXYToScreenCoords(xMark, 0);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -319,7 +319,7 @@ namespace AnimGrapher
             }
 
             // y > 0
-            for (double yMark = interval_; yMark <= Y_MAX; yMark += interval_)
+            for (double yMark = view_.Yunit; yMark <= view_.Ymax; yMark += view_.Yunit)
             {
                 coords = convertXYToScreenCoords(0, yMark);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -329,7 +329,7 @@ namespace AnimGrapher
             }
 
             // y < 0
-            for (double yMark = -interval_; yMark >= Y_MIN; yMark -= interval_)
+            for (double yMark = -view_.Yunit; yMark >= view_.Ymin; yMark -= view_.Yunit)
             {
                 coords = convertXYToScreenCoords(0, yMark);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
@@ -435,7 +435,7 @@ namespace AnimGrapher
                     }
                     break;
 
-                case DrawType.PLOT:
+                case DrawType.DOT:
                     // draw current point as disc
                     gGraph_.FillEllipse(drawBrush_,
                         currPoint.X - penWidth_ / 2, currPoint.Y - penWidth_ / 2,
@@ -706,9 +706,8 @@ namespace AnimGrapher
             //pictureboxPencil.Visible = true;
 
             // disable axis parameters and resizing
-            enableAxisParameters(false);
+            enableChangeView(false);
             //this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
 
             buttonClear.Enabled = true;
             buttonStop.Invoke(new MethodInvoker(delegate { buttonStop.Enabled = true; }));
@@ -735,8 +734,7 @@ namespace AnimGrapher
 
             //enableAxisParameters(true);
             //this.FormBorderStyle = FormBorderStyle.Sizable;
-            //this.MaximizeBox = true;
-            this.Invoke(new MethodInvoker(delegate { this.MaximizeBox = true; }));
+            //this.Invoke(new MethodInvoker(delegate { this.MaximizeBox = true; }));
             updateGUI();
         }
 
@@ -757,7 +755,7 @@ namespace AnimGrapher
             
                 // build parametric curve data
 
-                CurveData curveData = new CurveData(name, curveType_);
+                CurveData curveData = new CurveData(name, curveType_, view_.Isometric);
 
                 switch (curveType_)
                 {
@@ -775,14 +773,15 @@ namespace AnimGrapher
                         break;
                 }
 
-                curveData.XVMin = (double)numericupdownXMin.Value;
-                curveData.XVMax = (double)numericupdownXMax.Value;
-                curveData.YVMin = (double)numericupdownYMin.Value;
-                curveData.YVMax = (double)numericupdownYMax.Value;
+                curveData.XVmin = (double)numericupdownXMin.Value;
+                curveData.XVmax = (double)numericupdownXMax.Value;
+                curveData.YVmin = (double)numericupdownYMin.Value;
+                curveData.YVmax = (double)numericupdownYMax.Value;
+                curveData.Isometric = view_.Isometric;
 
-                curveData.PMin = (double)numericupdownPMin.Value;
-                curveData.PMax = (double)numericupdownPMax.Value;
-                curveData.PStep = (double)numericupdownPStep.Value;
+                curveData.Pmin = (double)numericupdownPMin.Value;
+                curveData.Pmax = (double)numericupdownPMax.Value;
+                curveData.Pstep = (double)numericupdownPStep.Value;
 
                 curveData.Thickness = (double)numericupdownThickness.Value;
 
@@ -895,7 +894,7 @@ namespace AnimGrapher
             stopDraw();
             clearGraph();
 
-            enableAxisParameters(true);
+            enableChangeView(true);
             buttonClear.Enabled = false;
             buttonExport.Enabled = false;
 
@@ -1116,17 +1115,7 @@ namespace AnimGrapher
             updateDrawParams();
         }
 
-        private void numericupdownPMin_TextChanged(object sender, EventArgs e)
-        {
-            updateDrawParams();
-        }
-
         private void numericupdownPMax_ValueChanged(object sender, EventArgs e)
-        {
-            updateDrawParams();
-        }
-
-        private void numericupdownPMax_TextChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
@@ -1136,17 +1125,7 @@ namespace AnimGrapher
             updateDrawParams();
         }
 
-        private void numericupdownPStep_TextChanged(object sender, EventArgs e)
-        {
-            updateDrawParams();
-        }
-
         private void numericupdownThickness_ValueChanged(object sender, EventArgs e)
-        {
-            updateDrawParams();
-        }
-
-        private void numericupdownThickness_TextChanged(object sender, EventArgs e)
         {
             updateDrawParams();
         }
@@ -1171,110 +1150,145 @@ namespace AnimGrapher
 
         private void numericupdownXMin_ValueChanged(object sender, EventArgs e)
         {
-            updateAxisParams();
-            clearGraph();
-        }
+            if (isUpdatingOtherNumericUpDown_)
+                return;
 
-        private void numericupdownXMin_TextChanged(object sender, EventArgs e)
-        {
-            updateAxisParams();
+            view_.Xmin = (double)numericupdownXMin.Value;
+
+            if (view_.Isometric)
+                view_.UpdateGivenX(wBaseBox_, hBaseBox_);
+
+            isUpdatingOtherNumericUpDown_ = true;
+            updateViewDisplay();
             clearGraph();
+            isUpdatingOtherNumericUpDown_ = false;
         }
 
         private void numericupdownXMax_ValueChanged(object sender, EventArgs e)
         {
-            updateAxisParams();
-            clearGraph();
-        }
+            if (isUpdatingOtherNumericUpDown_)
+                return;
 
-        private void numericupdownXMax_TextChanged(object sender, EventArgs e)
-        {
-            updateAxisParams();
+            if (isUpdatingOtherNumericUpDown_)
+                return;
+
+            view_.Xmax = (double)numericupdownXMax.Value;
+
+            if (view_.Isometric)
+                view_.UpdateGivenX(wBaseBox_, hBaseBox_);
+
+            isUpdatingOtherNumericUpDown_ = true;
+            updateViewDisplay();
             clearGraph();
+            isUpdatingOtherNumericUpDown_ = false;
         }
 
         private void numericupdownYMin_ValueChanged(object sender, EventArgs e)
         {
-            updateAxisParams();
-            clearGraph();
-        }
+            if (isUpdatingOtherNumericUpDown_)
+                return;
 
-        private void numericupdownYMin_TextChanged(object sender, EventArgs e)
-        {
-            updateAxisParams();
+            view_.Ymin = (double)numericupdownYMin.Value;
+
+            if (view_.Isometric)
+                view_.UpdateGivenY(wBaseBox_, hBaseBox_);
+
+            isUpdatingOtherNumericUpDown_ = true;
+            updateViewDisplay();
             clearGraph();
+            isUpdatingOtherNumericUpDown_ = false;
         }
 
         private void numericupdownYMax_ValueChanged(object sender, EventArgs e)
         {
-            updateAxisParams();
+            if (isUpdatingOtherNumericUpDown_)
+                return;
+
+            view_.Ymax = (double)numericupdownYMax.Value;
+
+            if (view_.Isometric)
+                view_.UpdateGivenY(wBaseBox_, hBaseBox_);
+
+            isUpdatingOtherNumericUpDown_ = true;
+            updateViewDisplay();
+            clearGraph();
+            isUpdatingOtherNumericUpDown_ = false;
+        }
+
+        private void numericupdownUnit_ValueChanged(object sender, EventArgs e)
+        {
+            updateViewDisplay();
             clearGraph();
         }
 
-        private void numericupdownYMax_TextChanged(object sender, EventArgs e)
+        private void updateViewDisplay()
         {
-            updateAxisParams();
-            clearGraph();
-        }
-
-        private void numericupdownInterval_ValueChanged(object sender, EventArgs e)
-        {
-            updateAxisParams();
-            clearGraph();
-        }
-
-        private void numericupdownInterval_TextChanged(object sender, EventArgs e)
-        {
-            updateAxisParams();
-            clearGraph();
-        }
-
-        private void updateAxisParams()
-        {
-            // ensure coherency
-            numericupdownXMin.Maximum = numericupdownXMax.Value - numericupdownXMin.Increment;
-            numericupdownXMax.Minimum = numericupdownXMin.Value + numericupdownXMax.Increment;
-            numericupdownYMin.Maximum = numericupdownYMax.Value - numericupdownYMin.Increment;
-            numericupdownYMax.Minimum = numericupdownYMin.Value + numericupdownYMax.Increment;
-
-            // update values
-            X_MIN = (double)numericupdownXMin.Value;
-            X_MAX = (double)numericupdownXMax.Value;
-            Y_MIN = (double)numericupdownYMin.Value;
-            Y_MAX = (double)numericupdownYMax.Value;
-
-            interval_ = (double)numericupdownInterval.Value;
-
-            // resize picture box
-
-            // Ratio width/height
-            float ratioXY = (float)(X_MAX - X_MIN) / (float)(Y_MAX - Y_MIN);
-
-            // Margin
-            int wMargin = 0;
-            int hMargin = 0;
-
-            // Compute picture box dimensions
-            hBaseBox_ = Math.Abs(panelGraph.Height - 2 * hMargin);
-            wBaseBox_ = Math.Abs((int)(hBaseBox_ * ratioXY));
-
-            if (wBaseBox_ + 2 * wMargin > panelGraph.Width)
+            if (true)
             {
-                wBaseBox_ = panelGraph.Width - 2 * wMargin;
-                hBaseBox_ = (int)(wBaseBox_ / ratioXY);
+                // update interface
+                numericupdownXMin.Value = (decimal)view_.Xmin;
+                numericupdownXMax.Value = (decimal)view_.Xmax;
+                numericupdownYMin.Value = (decimal)view_.Ymin;
+                numericupdownYMax.Value = (decimal)view_.Ymax;
+                
+                // ensure coherency
+                numericupdownXMin.Maximum = numericupdownXMax.Value - numericupdownXMin.Increment;
+                numericupdownXMax.Minimum = numericupdownXMin.Value + numericupdownXMax.Increment;
+                numericupdownYMin.Maximum = numericupdownYMax.Value - numericupdownYMin.Increment;
+                numericupdownYMax.Minimum = numericupdownYMin.Value + numericupdownYMax.Increment;
+
+                // update units
+                view_.Xunit = (double)numericupdownUnit.Value;
+                view_.Yunit = (double)numericupdownUnit.Value;
+
+                return;
             }
 
-            // Compute picture box location
-            int xBox = panelGraph.Width / 2 - wBaseBox_ / 2;
-            int yBox = panelGraph.Height / 2 - hBaseBox_ / 2;
+            //// ensure coherency
+            //numericupdownXMin.Maximum = numericupdownXMax.Value - numericupdownXMin.Increment;
+            //numericupdownXMax.Minimum = numericupdownXMin.Value + numericupdownXMax.Increment;
+            //numericupdownYMin.Maximum = numericupdownYMax.Value - numericupdownYMin.Increment;
+            //numericupdownYMax.Minimum = numericupdownYMin.Value + numericupdownYMax.Increment;
 
-            // Update picture box
-            pictureboxGraph.Location = new Point(xBox, yBox);
-            pictureboxGraph.Width = wBaseBox_;
-            pictureboxGraph.Height = hBaseBox_;            
+            //// update values
+            //view_.Xmin = (double)numericupdownXMin.Value;
+            //view_.Xmax = (double)numericupdownXMax.Value;
+            //view_.Ymin = (double)numericupdownYMin.Value;
+            //view_.Ymax = (double)numericupdownYMax.Value;
+
+            //view_.Xunit = (double)numericupdownUnit.Value;
+            ////view_.Yunit = (double)numericupdownInterval.Value;
+
+            //// resize picture box
+
+            //// Ratio width/height
+            //float ratioXY = (float)(view_.Xmax - view_.Xmin) / (float)(view_.Ymax - view_.Ymin);
+
+            //// Margin
+            //int wMargin = 0;
+            //int hMargin = 0;
+
+            //// Compute picture box dimensions
+            //hBaseBox_ = Math.Abs(panelGraph.Height - 2 * hMargin);
+            //wBaseBox_ = Math.Abs((int)(hBaseBox_ * ratioXY));
+
+            //if (wBaseBox_ + 2 * wMargin > panelGraph.Width)
+            //{
+            //    wBaseBox_ = panelGraph.Width - 2 * wMargin;
+            //    hBaseBox_ = (int)(wBaseBox_ / ratioXY);
+            //}
+
+            //// Compute picture box location
+            //int xBox = panelGraph.Width / 2 - wBaseBox_ / 2;
+            //int yBox = panelGraph.Height / 2 - hBaseBox_ / 2;
+
+            //// Update picture box
+            //pictureboxGraph.Location = new Point(xBox, yBox);
+            //pictureboxGraph.Width = wBaseBox_;
+            //pictureboxGraph.Height = hBaseBox_;            
         }
 
-        private void enableAxisParameters(bool status)
+        private void enableChangeView(bool status)
         {
             labelXMinMax.Enabled = status;
             labelYMinMax.Enabled = status;
@@ -1283,12 +1297,20 @@ namespace AnimGrapher
             numericupdownYMin.Enabled = status;
             numericupdownYMax.Enabled = status;
 
-            labelInterval.Enabled = status;
-            numericupdownInterval.Enabled = status && (comboboxHints.SelectedIndex > 0);
+            mouseCanMoveGraph_ = status;
+
+            labelUnit.Enabled = status;
+            numericupdownUnit.Enabled = status && (comboboxHints.SelectedIndex > 0);
             labelHints.Enabled = status;
             comboboxHints.Enabled = status;
+
+            this.MaximizeBox = status;
+            this.FormBorderStyle = status ?
+                FormBorderStyle.Sizable :
+                FormBorderStyle.FixedSingle;
         }
 
+        // TODO: layers
         private void updateHints()
         {
             switch (comboboxHints.SelectedIndex)
@@ -1318,8 +1340,26 @@ namespace AnimGrapher
             if (this.WindowState == FormWindowState.Minimized)
                 return;
 
-            updateAxisParams();
+            // Compute picture box dimensions
+            wBaseBox_ = panelGraph.Width;
+            hBaseBox_ = panelGraph.Height;
+
+            // Compute picture box location
+            int xBox = panelGraph.Width / 2 - wBaseBox_ / 2;
+            int yBox = panelGraph.Height / 2 - hBaseBox_ / 2;
+
+            // Update picture box
+            pictureboxGraph.Location = new Point(xBox, yBox);
+            pictureboxGraph.Width = wBaseBox_;
+            pictureboxGraph.Height = hBaseBox_;
+
+            if (view_.Isometric)
+                view_.UpdateGivenY(wBaseBox_, hBaseBox_);
+
+            clearGraph();
+            updateViewDisplay();
             pictureboxGraph.Image = bitmapGraph_;
+
             hasResized_ = true;
         }
 
@@ -1457,24 +1497,125 @@ namespace AnimGrapher
             buttonPausePlay.Enabled = isDrawing_ || exprsValid;
         }
 
+        private void pictureboxGraph_MouseClick(object sender, MouseEventArgs e)
+        {
+            //
+        }
+
+        private void pictureboxGraph_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // center view on origin
+            if (mouseCanMoveGraph_)
+            {
+                double xRange = view_.Xmax - view_.Xmin;
+                double yRange = view_.Ymax - view_.Ymin;
+
+                view_.Xmin = -0.5 * xRange;
+                view_.Xmax =  0.5 * xRange;
+                view_.Ymin = -0.5 * yRange;
+                view_.Ymax =  0.5 * yRange;
+
+                isUpdatingOtherNumericUpDown_ = true;
+                updateViewDisplay();
+                clearGraph();
+                isUpdatingOtherNumericUpDown_ = false;
+            }
+        }
+
+        private void pictureboxGraph_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (isDrawing_)
+                return;
+
+            if (mouseCanMoveGraph_ && e.Button == MouseButtons.Left)
+            {
+                mouseButtonOnGraphXScreen_ = e.X;
+                mouseButtonOnGraphYScreen_ = e.Y;
+                Tuple<double, double> xy = convertScreenCoordsToXY(mouseButtonOnGraphXScreen_, mouseButtonOnGraphYScreen_);
+                mouseButtonOnGraphX_ = xy.Item1;
+                mouseButtonOnGraphY_ = xy.Item2;
+
+                this.pictureboxGraph.Cursor = Cursors.Hand;
+                mouseButtonOnGraphDown_ = true;
+            }
+        }
+
         private void pictureboxGraph_MouseMove(object sender, MouseEventArgs e)
         {
             if (isDrawing_)
                 return;
 
-            labelCoords.Visible = true;
+            int xScreen = e.X;
+            int yScreen = e.Y;
+            Tuple<double, double> xy = convertScreenCoordsToXY(xScreen, yScreen);
+            double x = xy.Item1;
+            double y = xy.Item2;
 
-            // display coordinates
-            int xPic = e.X;
-            int yPic = e.Y;
-            Tuple<double, double> xy = convertScreenCoordsToXY(xPic, yPic);
-            labelCoords.Text = Environment.NewLine;
-            labelCoords.Text += "x=" + xy.Item1.ToString("0.0000") + Environment.NewLine;
-            labelCoords.Text += "y=" + xy.Item2.ToString("0.0000");
+            if (mouseCanMoveGraph_ && mouseButtonOnGraphDown_)
+            {
+                bool moveDiscrete = (Control.ModifierKeys == Keys.Shift);
+                if (moveDiscrete)
+                {
+                    int dDelta = 20; // pixels
+                    xScreen = mouseButtonOnGraphXScreen_ + dDelta * ((xScreen - mouseButtonOnGraphXScreen_) / dDelta);
+                    yScreen = mouseButtonOnGraphYScreen_ + dDelta * ((yScreen - mouseButtonOnGraphYScreen_) / dDelta);
+                    System.Diagnostics.Trace.WriteLine("delta x = " + (xScreen - mouseButtonOnGraphXScreen_));
+                    xy = convertScreenCoordsToXY(xScreen, yScreen);
+                    x = xy.Item1;
+                    y = xy.Item2;
+                }
+                
+                double xDelta = x - mouseButtonOnGraphX_;
+                double yDelta = y - mouseButtonOnGraphY_;
+
+                bool updateX = moveDiscrete ? true : (xScreen != mouseButtonOnGraphXScreen_);
+                bool updateY = moveDiscrete ? true : (yScreen != mouseButtonOnGraphYScreen_);
+
+                if (updateX)
+                {
+                    view_.Xmin -= xDelta;
+                    view_.Xmax -= xDelta;
+                }
+
+                if (updateY)
+                {
+                    view_.Ymin -= yDelta;
+                    view_.Ymax -= yDelta;
+                }
+
+                if (updateX || updateY)
+                {
+                    isUpdatingOtherNumericUpDown_ = true;
+                    updateViewDisplay();
+                    clearGraph();
+                    isUpdatingOtherNumericUpDown_ = false;
+                }
+            }
+            else
+            {
+                labelCoords.Visible = true;
+
+                // display coordinates
+                labelCoords.Text = Environment.NewLine;
+                labelCoords.Text += "x=" + x.ToString("0.0000") + Environment.NewLine;
+                labelCoords.Text += "y=" + y.ToString("0.0000");
+            }
+        }
+
+        private void pictureboxGraph_MouseUp(object sender, MouseEventArgs e)
+        {
+
+            if (isDrawing_)
+                return;
+
+            this.pictureboxGraph.Cursor = Cursors.Cross;
+            mouseButtonOnGraphDown_ = false;
         }
 
         private void pictureboxGraph_MouseLeave(object sender, EventArgs e)
         {
+            mouseButtonOnGraphDown_ = false;
+
             if (isDrawing_)
                 return;
 
@@ -1486,7 +1627,7 @@ namespace AnimGrapher
             clearGraph();
             pictureboxGraph.Image = bitmapGraph_;
 
-            numericupdownInterval.Enabled = (comboboxHints.SelectedIndex > 0);
+            numericupdownUnit.Enabled = (comboboxHints.SelectedIndex > 0);
         }
 
         private void comboboxCurveType_SelectedIndexChanged(object sender, EventArgs e)
@@ -1530,8 +1671,8 @@ namespace AnimGrapher
                     drawType_ = DrawType.LINE;
                     break;
 
-                case "PLOT":
-                    drawType_ = DrawType.PLOT;
+                case "DOTS":
+                    drawType_ = DrawType.DOT;
                     break;
             }
         }
@@ -1543,11 +1684,11 @@ namespace AnimGrapher
             int w = wBaseBox_;
             int h = hBaseBox_;
 
-            double xScaleFactor = w / (X_MAX - X_MIN);
-            double xCenter = 0 - xScaleFactor * X_MIN;
+            double xScaleFactor = w / (view_.Xmax - view_.Xmin);
+            double xCenter = 0 - xScaleFactor * view_.Xmin;
 
-            double yScaleFactor = h / (Y_MIN - Y_MAX);
-            double yCenter = 0 - yScaleFactor * Y_MAX;
+            double yScaleFactor = h / (view_.Ymin - view_.Ymax);
+            double yCenter = 0 - yScaleFactor * view_.Ymax;
 
             double xScreen = xCenter + xScaleFactor * x;
             double yScreen = yCenter + yScaleFactor * y;
@@ -1560,14 +1701,14 @@ namespace AnimGrapher
             int w = wBaseBox_;
             int h = hBaseBox_;
 
-            double xScaleFactor = (X_MAX - X_MIN) / w;
-            double x0 = X_MIN;
+            double xScaleFactor = (view_.Xmax - view_.Xmin) / w;
+            double x0 = view_.Xmin;
 
-            double yScaleFactor = (Y_MAX - Y_MIN) / h;
-            double y0 = Y_MIN;
+            double yScaleFactor = (view_.Ymax - view_.Ymin) / h;
+            double y0 = view_.Ymax;
 
-            double x =  x0 + xScaleFactor * xScreen;
-            double y = -y0 - yScaleFactor * yScreen;
+            double x = x0 + xScaleFactor * xScreen;
+            double y = y0 - yScaleFactor * yScreen;
 
             return Tuple.Create(x, y);
         }
@@ -1587,41 +1728,44 @@ namespace AnimGrapher
                 timer_.Stop();
             }
 
-            CurveData curveData = comboboxCurves.SelectedItem as CurveData;
-            bool isNewEquation = (curveData.Name == "<New>");
+            CurveData cd = comboboxCurves.SelectedItem as CurveData;
+            bool isNewEquation = (cd.Name == "<New>");
 
             switch (curveType_)
             {
                 case CurveType.PARAMETRIC:
-                    textbox1Eq.Text = curveData.XtEquation;
-                    textbox2Eq.Text = curveData.YtEquation;
+                    textbox1Eq.Text = cd.XtEquation;
+                    textbox2Eq.Text = cd.YtEquation;
                     xtExpr_ = textbox1Eq.Text;
                     ytExpr_ = textbox2Eq.Text;
                     break;
 
                 case CurveType.POLAR:
-                    textbox1Eq.Text = curveData.RtEquation;
+                    textbox1Eq.Text = cd.RtEquation;
                     rtExpr_ = textbox1Eq.Text;
                     break;
 
                 case CurveType.CARTESIAN:
-                    textbox1Eq.Text = curveData.YxEquation;
+                    textbox1Eq.Text = cd.YxEquation;
                     yxExpr_ = textbox1Eq.Text;
                     break;
             }
 
-            decimal xMin = (decimal)curveData.XVMin;
-            decimal xMax = (decimal)curveData.XVMax;
-            decimal yMin = (decimal)curveData.YVMin;
-            decimal yMax = (decimal)curveData.YVMax;
+            if (cd.Isometric)
+                cd.UpdateGivenY(wBaseBox_, hBaseBox_);
+
+            decimal xMin = (decimal)cd.XVmin;
+            decimal xMax = (decimal)cd.XVmax;
+            decimal yMin = (decimal)cd.YVmin;
+            decimal yMax = (decimal)cd.YVmax;
 
             // if loading an equation with different border values, show choice dialog
             if (!isNewEquation)
-            {
+            {                
                 if (xMin != numericupdownXMin.Value || xMax != numericupdownXMax.Value
                  || yMin != numericupdownYMin.Value || yMax != numericupdownYMax.Value)
                 {
-                    string msg = "Equation \"" + curveData.Name + "\" has different predefined x,y min and max values." + Environment.NewLine;
+                    string msg = "Equation \"" + cd.Name + "\" has different predefined x,y min and max values." + Environment.NewLine;
                     msg += Environment.NewLine;
                     msg += "Do you want apply them? (The current image will be erased)";
                     DialogResult result = MessageBox.Show(msg, "Information", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
@@ -1629,15 +1773,15 @@ namespace AnimGrapher
                     {
                         stopDraw();
 
-                        enableAxisParameters(true);
+                        enableChangeView(true);
                         buttonClear.Enabled = false;
 
-                        numericupdownXMin.Value = (decimal)curveData.XVMin;
-                        numericupdownXMax.Value = (decimal)curveData.XVMax;
-                        numericupdownYMin.Value = (decimal)curveData.YVMin;
-                        numericupdownYMax.Value = (decimal)curveData.YVMax;
+                        numericupdownXMin.Value = xMin;
+                        numericupdownXMax.Value = xMax;
+                        numericupdownYMin.Value = yMin;
+                        numericupdownYMax.Value = yMax;
 
-                        updateAxisParams();
+                        updateViewDisplay();
                         clearGraph();
                     }
                     else
@@ -1653,11 +1797,11 @@ namespace AnimGrapher
                 textbox1Eq.Focus();
             }
 
-            numericupdownPMin.Value = (decimal)curveData.PMin;
-            numericupdownPMax.Value = (decimal)curveData.PMax;
-            numericupdownPStep.Value = (decimal)curveData.PStep;
+            numericupdownPMin.Value = (decimal)cd.Pmin;
+            numericupdownPMax.Value = (decimal)cd.Pmax;
+            numericupdownPStep.Value = (decimal)cd.Pstep;
 
-            numericupdownThickness.Value = (int)curveData.Thickness;
+            numericupdownThickness.Value = (int)cd.Thickness;
 
             buttonSave.Text = isNewEquation ? "Save equation as..." : "Save equation";
             buttonDelete.Enabled = !isNewEquation;
@@ -1742,38 +1886,41 @@ namespace AnimGrapher
                     
                     // view
                     case "xv_min":
-                        cd.XVMin = Convert.ToDouble(value, culture);
+                        cd.XVmin = Convert.ToDouble(value, culture);
                         break;
                     case "xv_max":
-                        cd.XVMax = Convert.ToDouble(value, culture);
+                        cd.XVmax = Convert.ToDouble(value, culture);
                         break;
                     case "yv_min":
-                        cd.YVMin = Convert.ToDouble(value, culture);
+                        cd.YVmin = Convert.ToDouble(value, culture);
                         break;
                     case "yv_max":
-                        cd.YVMax = Convert.ToDouble(value, culture);
+                        cd.YVmax = Convert.ToDouble(value, culture);
                         break;
-                    
+                    case "isometric":
+                        cd.Isometric = Convert.ToBoolean(value, culture);
+                        break;
+
                     // parametric and polar curves
                     case "t_min":
-                        cd.PMin = Convert.ToDouble(value, culture);
+                        cd.Pmin = Convert.ToDouble(value, culture);
                         break;
                     case "t_max":
-                        cd.PMax = Convert.ToDouble(value, culture);
+                        cd.Pmax = Convert.ToDouble(value, culture);
                         break;
                     case "t_step":
-                        cd.PStep = Convert.ToDouble(value, culture);
+                        cd.Pstep = Convert.ToDouble(value, culture);
                         break;
 
                     // cartesian curves
-                    case "x_min":
-                        cd.PMin = Convert.ToDouble(value, culture);
+                    case "view_.Xmin":
+                        cd.Pmin = Convert.ToDouble(value, culture);
                         break;
-                    case "x_max":
-                        cd.PMax = Convert.ToDouble(value, culture);
+                    case "view_.Xmax":
+                        cd.Pmax = Convert.ToDouble(value, culture);
                         break;
                     case "x_step":
-                        cd.PStep = Convert.ToDouble(value, culture);
+                        cd.Pstep = Convert.ToDouble(value, culture);
                         break;
 
                     case "thickness":
