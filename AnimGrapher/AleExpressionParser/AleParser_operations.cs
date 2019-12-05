@@ -2602,13 +2602,31 @@ namespace AleProjects.AleLexer.AleParser
                     Evaluator = BuiltinASinFunction
                 });
 
+                AddOperation(new AleOperation(IgnoreCase ? "ARCSIN" : "Arcsin")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinASinFunction
+                });
+
                 AddOperation(new AleOperation(IgnoreCase ? "ACOS" : "Acos")
                 {
                     Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
                     Evaluator = BuiltinACosFunction
                 });
 
+                AddOperation(new AleOperation(IgnoreCase ? "ARCCOS" : "Arccos")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinACosFunction
+                });
+
                 AddOperation(new AleOperation(IgnoreCase ? "ATAN" : "Atan")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinATanFunction
+                });
+
+                AddOperation(new AleOperation(IgnoreCase ? "ARCTAN" : "Arctan")
                 {
                     Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
                     Evaluator = BuiltinATanFunction
@@ -2645,6 +2663,12 @@ namespace AleProjects.AleLexer.AleParser
                 });
 
                 AddOperation(new AleOperation(IgnoreCase ? "SQRT" : "Sqrt")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinSqrtFunction
+                });
+
+                AddOperation(new AleOperation(IgnoreCase ? "SQR" : "Sqr")
                 {
                     Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
                     Evaluator = BuiltinSqrtFunction
@@ -2705,6 +2729,12 @@ namespace AleProjects.AleLexer.AleParser
                 });
 
                 AddOperation(new AleOperation(IgnoreCase ? "SIGN" : "Sign")
+                {
+                    Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
+                    Evaluator = BuiltinSignFunction
+                });
+
+                AddOperation(new AleOperation(IgnoreCase ? "SGN" : "Sgn")
                 {
                     Parameters = new List<Tuple<TypeCode, object>>() { new Tuple<TypeCode, object>(TypeCode.Double, null) },
                     Evaluator = BuiltinSignFunction

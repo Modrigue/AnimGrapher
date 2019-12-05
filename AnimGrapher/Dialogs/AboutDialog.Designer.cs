@@ -52,7 +52,7 @@
             // 
             this.buttonOk.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.buttonOk.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.buttonOk.Location = new System.Drawing.Point(190, 519);
+            this.buttonOk.Location = new System.Drawing.Point(240, 539);
             this.buttonOk.Name = "buttonOk";
             this.buttonOk.Size = new System.Drawing.Size(100, 30);
             this.buttonOk.TabIndex = 1;
@@ -118,8 +118,8 @@
             this.labelInfo.Name = "labelInfo";
             this.labelInfo.Size = new System.Drawing.Size(447, 42);
             this.labelInfo.TabIndex = 6;
-            this.labelInfo.Text = "Just a fun little freeware to interactively draw and play with parametric curves." +
-    "";
+            this.labelInfo.Text = "Just a fun little freeware to interactively draw and play with mathematical curve" +
+    "s.";
             // 
             // linkLabel1
             // 
@@ -147,7 +147,7 @@
             this.labelFunctions.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelFunctions.Location = new System.Drawing.Point(45, 391);
             this.labelFunctions.Name = "labelFunctions";
-            this.labelFunctions.Size = new System.Drawing.Size(400, 105);
+            this.labelFunctions.Size = new System.Drawing.Size(476, 125);
             this.labelFunctions.TabIndex = 9;
             this.labelFunctions.Text = resources.GetString("labelFunctions.Text");
             // 
@@ -226,7 +226,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(484, 561);
+            this.ClientSize = new System.Drawing.Size(584, 581);
             this.Controls.Add(this.linkLabel5);
             this.Controls.Add(this.linkLabel4);
             this.Controls.Add(this.linkLabel3);
@@ -245,9 +245,9 @@
             this.Controls.Add(this.buttonOk);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(500, 600);
+            this.MaximumSize = new System.Drawing.Size(600, 620);
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(500, 600);
+            this.MinimumSize = new System.Drawing.Size(600, 620);
             this.Name = "AboutDialog";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
