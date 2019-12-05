@@ -9,11 +9,9 @@ namespace AnimGrapher
 
         private CurveType curveType_ = CurveType.PARAMETRIC;
 
-        private string xtEquation_ = "";
-        private string ytEquation_ = "";
-        private string rtEquation_ = "";
-        private string yxEquation_ = "";
-
+        private string equation1_ = "";
+        private string equation2_ = "";
+        
         public bool Isometric = true;
 
         public double XVmin = -2;
@@ -22,7 +20,7 @@ namespace AnimGrapher
         public double YVmax =  2;
 
         public double Pmin = 0;
-        public double Pmax = 6.283;     // 2*Math.PI;
+        public double Pmax = 6.283; // 2*Math.PI;
         public double Pstep = 0.01;
 
         public double Thickness = 1;
@@ -41,28 +39,16 @@ namespace AnimGrapher
             set { curveType_ = value; }
         }
 
-        public string XtEquation
+        public string Equation1
         {
-            get { return xtEquation_; }
-            set { xtEquation_ = value; }
+            get { return equation1_; }
+            set { equation1_ = value; }
         }
 
-        public string YtEquation
+        public string Equation2
         {
-            get { return ytEquation_; }
-            set { ytEquation_ = value; }
-        }
-
-        public string RtEquation
-        {
-            get { return rtEquation_; }
-            set { rtEquation_ = value; }
-        }
-
-        public string YxEquation
-        {
-            get { return yxEquation_; }
-            set { yxEquation_ = value; }
+            get { return equation2_; }
+            set { equation2_ = value; }
         }
 
         #endregion
@@ -87,16 +73,16 @@ namespace AnimGrapher
             switch (curveType)
             {
                 case CurveType.PARAMETRIC:
-                    xtEquation_ = equation1;
-                    ytEquation_ = equation2;
+                    equation1_ = equation1;
+                    equation2_ = equation2;
                     break;
 
                 case CurveType.POLAR:
-                    rtEquation_ = equation1;
-                    break;
-
                 case CurveType.CARTESIAN:
-                    yxEquation_ = equation1;
+                case CurveType.EQUALITY:
+                case CurveType.INEQUALITY:
+                    equation1_ = equation1;
+                    equation2_ = "";
                     break;
             }
         }
@@ -108,10 +94,9 @@ namespace AnimGrapher
             name_ = cdDefault.name_;
             curveType_ = cdDefault.curveType_;
 
-            xtEquation_ = cdDefault.xtEquation_;
-            ytEquation_ = cdDefault.ytEquation_;
-            rtEquation_ = cdDefault.rtEquation_;
-            yxEquation_ = cdDefault.yxEquation_;
+            equation1_ = cdDefault.equation1_;
+            equation2_ = cdDefault.equation2_;
+
             Isometric = cdDefault.Isometric;
 
             XVmin = cdDefault.XVmin;
@@ -133,10 +118,8 @@ namespace AnimGrapher
             cdCopy.Name = this.Name;
             cdCopy.Type = this.Type;
 
-            cdCopy.XtEquation = this.XtEquation;
-            cdCopy.YtEquation = this.YtEquation;
-            cdCopy.RtEquation = this.RtEquation;
-            cdCopy.YxEquation = this.YxEquation;
+            cdCopy.Equation1 = this.Equation1;
+            cdCopy.Equation2 = this.Equation2;
 
             cdCopy.Isometric = this.Isometric;
             cdCopy.XVmin = this.XVmin;
@@ -169,16 +152,24 @@ namespace AnimGrapher
             switch (curveType_)
             {
                 case CurveType.PARAMETRIC:
-                    desc += "x(t)=" + xtEquation_ + Environment.NewLine;
-                    desc += "y(t)=" + ytEquation_ + Environment.NewLine;
+                    desc += "x(t)=" + equation1_ + Environment.NewLine;
+                    desc += "y(t)=" + equation2_ + Environment.NewLine;
                     break;
 
                 case CurveType.POLAR:
-                    desc += "r(t)=" + rtEquation_ + Environment.NewLine;
+                    desc += "r(t)=" + equation1_ + Environment.NewLine;
                     break;
 
                 case CurveType.CARTESIAN:
-                    desc += "y(x)=" + yxEquation_ + Environment.NewLine;
+                    desc += "y(x)=" + equation1_ + Environment.NewLine;
+                    break;
+
+                case CurveType.EQUALITY:
+                    desc += "0=" + equation1_ + Environment.NewLine;
+                    break;
+
+                case CurveType.INEQUALITY:
+                    desc += "0<" + equation1_ + Environment.NewLine;
                     break;
             }
 
@@ -216,6 +207,8 @@ namespace AnimGrapher
                     break;
 
                 case CurveType.CARTESIAN:
+                case CurveType.EQUALITY:
+                case CurveType.INEQUALITY:
                     if (Pmin != cdDefault.Pmin)
                         desc += "x_min=" + Pmin.ToString(culture) + Environment.NewLine;
                     if (Pmax != cdDefault.Pmax)

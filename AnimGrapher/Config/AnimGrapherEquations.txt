@@ -18,6 +18,14 @@ y(t)=0.5*cos(t)*(exp(cos(t))-2*cos(4*t)-sin(t/12)^5)
 t_max=60
 t_step=0.03
 
+[Love]
+type=parametric
+x(t)=16*pow(sin(t), 3)
+y(t)=13*cos(t)-5*cos(2*t)-2*cos(3*t)-cos(4*t)
+yv_min=-20
+yv_max=16
+thickness=10
+
 [Nico's shell collar]
 type=parametric
 x(t)=1.4*cos(t) + 1/3*sin(201*t)
@@ -484,3 +492,16 @@ xv_max=10
 yv_min=-5
 yv_max=5
 x_max=10
+
+[Disk]
+type=inequality
+0<2*2 - (x*x + y*y)
+x_step=0.05
+thickness=7
+
+[Heart]
+type=inequality
+0<1- (x*x + pow((y-sqrt(abs(x))), 2))
+yv_min=-1
+x_step=0.02
+thickness=7

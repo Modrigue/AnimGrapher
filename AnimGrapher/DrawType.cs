@@ -4,6 +4,8 @@
     {
         LINE,
 
-        DOT
+        DOT,
+
+        SQUARE
     }
 }

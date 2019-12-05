@@ -578,7 +578,7 @@ namespace AnimGrapher
             //txtExpression.Focus();
         }
 
-        public void Parse(string expr, string param)
+        public void Parse(string expr, string[] variables)
         {
             //string S;
             List<AleToken> list, rpn_list;
@@ -637,14 +637,22 @@ namespace AnimGrapher
                             List<string> unknownVars = new List<string>();
                             foreach (Tuple<int, string> hashVar in vars)
                             {
-                                string variable = hashVar.Item2;
+                                string curVariable = hashVar.Item2;
 
                                 // fetch expected parameter
-                                if (variable.ToUpper() == param.ToUpper())
-                                    continue;
+                                bool found = false;
+                                foreach (string variable in variables)
+                                {
+                                    if (curVariable.ToUpper() == variable.ToUpper())
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                                }
 
                                 // unknown variable
-                                unknownVars.Add(variable);
+                                if (!found)
+                                    unknownVars.Add(curVariable);
                             }
 
                             if (unknownVars.Count > 0)

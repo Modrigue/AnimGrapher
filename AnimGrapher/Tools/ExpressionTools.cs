@@ -14,15 +14,29 @@ namespace AnimGrapher
             expression_ = new Expression();
         }
 
-        public static double Evaluate(string expr, string param, double value)
+        public static double Evaluate(string expr, string variable, double value)
         {
             string valueString = value.ToString(CultureInfo.GetCultureInfo("en-GB"));
-            string prefix = param + ":=" + valueString;
+            string prefix = variable + ":=" + valueString;
 
             return expression_.Evaluate(prefix + "; " + expr);
         }
 
-        public static bool IsExpressionValid(string expr, string var)
+        public static double Evaluate(string expr, string[] variables, double[] values)
+        {
+            string prefix = "";
+            int index = -1;
+            foreach (string variable in variables)
+            {
+                index++;
+                double value = (double)values.GetValue(index);
+                prefix += variable + ":=" + value.ToString(CultureInfo.GetCultureInfo("en-GB")) + ";";
+            }
+
+            return expression_.Evaluate(prefix + expr);
+        }
+
+        public static bool IsExpressionValid(string expr, string[] variables)
         {
             bool isValid = true;
 
@@ -32,7 +46,7 @@ namespace AnimGrapher
 
             try
             {
-                expression_.Parse(expr, var);
+                expression_.Parse(expr, variables);
             }
             catch (Exception /*ex*/)
             {

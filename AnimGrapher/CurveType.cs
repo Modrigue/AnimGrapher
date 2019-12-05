@@ -6,6 +6,10 @@
 
         POLAR,
 
-        CARTESIAN
+        CARTESIAN,
+
+        EQUALITY,
+
+        INEQUALITY
     }
 }

@@ -237,10 +237,11 @@
             this.comboboxDrawType.FormattingEnabled = true;
             this.comboboxDrawType.Items.AddRange(new object[] {
             "Line",
-            "Dots"});
+            "Dots",
+            "Square"});
             this.comboboxDrawType.Location = new System.Drawing.Point(317, 118);
             this.comboboxDrawType.Name = "comboboxDrawType";
-            this.comboboxDrawType.Size = new System.Drawing.Size(45, 21);
+            this.comboboxDrawType.Size = new System.Drawing.Size(60, 21);
             this.comboboxDrawType.TabIndex = 44;
             this.tooltip_.SetToolTip(this.comboboxDrawType, "Drawing style (line or plot)");
             this.comboboxDrawType.SelectedIndexChanged += new System.EventHandler(this.comboboxDrawType_SelectedIndexChanged);
@@ -254,7 +255,8 @@
             this.comboboxCurveType.Items.AddRange(new object[] {
             "Parametric",
             "Polar",
-            "Cartesian"});
+            "Cartesian",
+            "Inequality"});
             this.comboboxCurveType.Location = new System.Drawing.Point(149, 6);
             this.comboboxCurveType.Name = "comboboxCurveType";
             this.comboboxCurveType.Size = new System.Drawing.Size(80, 21);
@@ -870,7 +872,7 @@
             // 
             this.labelPStep.Anchor = System.Windows.Forms.AnchorStyles.Right;
             this.labelPStep.AutoSize = true;
-            this.labelPStep.Location = new System.Drawing.Point(691, 122);
+            this.labelPStep.Location = new System.Drawing.Point(682, 122);
             this.labelPStep.Name = "labelPStep";
             this.labelPStep.Size = new System.Drawing.Size(33, 13);
             this.labelPStep.TabIndex = 2;
