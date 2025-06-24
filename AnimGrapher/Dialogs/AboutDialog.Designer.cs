@@ -85,7 +85,7 @@
             this.labelAuthor.Name = "labelAuthor";
             this.labelAuthor.Size = new System.Drawing.Size(119, 16);
             this.labelAuthor.TabIndex = 3;
-            this.labelAuthor.Text = "by Nicolas Gourier";
+            this.labelAuthor.Text = "by Modrigue";
             this.labelAuthor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pictureboxIcon

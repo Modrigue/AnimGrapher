@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("AnimGrapher")]
-[assembly: AssemblyCopyright("Copyright © 2017-2019 Nicolas Gourier")]
+[assembly: AssemblyCopyright("Copyright © 2017-2025 Modrigue")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Vous pouvez spécifier toutes les valeurs ou indiquer les numéros de build et de révision par défaut 
 // en utilisant '*', comme indiqué ci-dessous :
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.8.0.*")]
+[assembly: AssemblyVersion("0.9.0.*")]
 //[assembly: AssemblyFileVersion("0.6.0.*")]
