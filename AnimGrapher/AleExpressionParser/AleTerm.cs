@@ -671,9 +671,11 @@ namespace AleProjects.AleLexer.AleParser
 
                 if ((_Operation == null || _Operation.IsClassMethod) && result.SetError(AleTermResult.ERROR_UNKNOWNFUNCTION, Token.StartInOrigin)) return false;
 
-                OperationEvalParameters evalParams = new OperationEvalParameters();
-                evalParams.userEvaluate = userEvaluate;
-                evalParams.userAssign = userAssign;
+                OperationEvalParameters evalParams = new OperationEvalParameters
+                {
+                    userEvaluate = userEvaluate,
+                    userAssign = userAssign
+                };
 
                 if (_Operation.IsOperator) return _Operation.Evaluator(this, ref evalParams, ref result);
 

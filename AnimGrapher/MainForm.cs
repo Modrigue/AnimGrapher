@@ -14,8 +14,8 @@ namespace AnimGrapher
 {
     public partial class MainForm : Form
     {
-        private float dpiX_;
-        private float dpiY_;
+        private readonly float dpiX_;
+        private readonly float dpiY_;
 
         // for debug purposes only
         #if DEBUG
@@ -36,7 +36,7 @@ namespace AnimGrapher
 
         // draw parameters
 
-        private View view_;
+        private readonly View view_;
 
         // used for parametric, polar, cartesian equations
         private double p_;
@@ -54,14 +54,14 @@ namespace AnimGrapher
         private Color drawColor_ = Color.Black;
         private Color backColor_ = Color.FromArgb(252, 252, 254);
 
-        SolidBrush drawBrush_;
-        Pen drawPen_;
+        readonly SolidBrush drawBrush_;
+        readonly Pen drawPen_;
 
         private Point prevPoint_;
         private bool hasInitPoint_;
         private bool lastPoint_;
 
-        private bool showCoordsAtDraw_ = true;
+        private readonly bool showCoordsAtDraw_ = true;
 
         private bool isUpdatingOtherNumericUpDown_ = false;
 
@@ -75,8 +75,8 @@ namespace AnimGrapher
         // timer objects
 
         // archaic, slow, but stable
-        System.Windows.Forms.Timer timer_;
-        private int timerInterval_ = 1; // ms
+        readonly System.Windows.Forms.Timer timer_;
+        private readonly int timerInterval_ = 1; // ms
 
         // recursion depth error
         //private System.Timers.Timer timer_;
@@ -100,8 +100,8 @@ namespace AnimGrapher
         private string expr2_ = "";       
 
         // saved equations
-        private string pathEquations_ = "AnimGrapherEquations.txt";
-        private List<CurveData> savedEquations_;
+        private readonly string pathEquations_ = "AnimGrapherEquations.txt";
+        private readonly List<CurveData> savedEquations_;
 
         // curve type
         private CurveType curveType_ = CurveType.PARAMETRIC;
@@ -131,8 +131,10 @@ namespace AnimGrapher
             drawPen_ = new Pen(drawColor_);
 
             // setup timer
-            timer_ = new System.Windows.Forms.Timer();
-            timer_.Interval = timerInterval_;
+            timer_ = new System.Windows.Forms.Timer
+            {
+                Interval = timerInterval_
+            };
             timer_.Tick += timer__Tick;
 
             //timer_ = new System.Timers.Timer();
@@ -316,7 +318,7 @@ namespace AnimGrapher
             {
                 coords = convertXYToScreenCoords(xMark, 0);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
-                int yMarkScreen = (int)(coords.Item2 + 0.5);
+                //int yMarkScreen = (int)(coords.Item2 + 0.5);
 
                 gGraph_.DrawLine(gridPen, new Point(xMarkScreen, 0), new Point(xMarkScreen, hBaseBox_));
             }
@@ -326,7 +328,7 @@ namespace AnimGrapher
             {
                 coords = convertXYToScreenCoords(xMark, 0);
                 int xMarkScreen = (int)(coords.Item1 + 0.5);
-                int yMarkScreen = (int)(coords.Item2 + 0.5);
+                //int yMarkScreen = (int)(coords.Item2 + 0.5);
 
                 gGraph_.DrawLine(gridPen, new Point(xMarkScreen, 0), new Point(xMarkScreen, hBaseBox_));
             }
@@ -335,7 +337,7 @@ namespace AnimGrapher
             for (double yMark = view_.Yunit; yMark <= view_.Ymax; yMark += view_.Yunit)
             {
                 coords = convertXYToScreenCoords(0, yMark);
-                int xMarkScreen = (int)(coords.Item1 + 0.5);
+                //int xMarkScreen = (int)(coords.Item1 + 0.5);
                 int yMarkScreen = (int)(coords.Item2 + 0.5);
 
                 gGraph_.DrawLine(gridPen, new Point(0, yMarkScreen), new Point(wBaseBox_, yMarkScreen));
@@ -345,7 +347,7 @@ namespace AnimGrapher
             for (double yMark = -view_.Yunit; yMark >= view_.Ymin; yMark -= view_.Yunit)
             {
                 coords = convertXYToScreenCoords(0, yMark);
-                int xMarkScreen = (int)(coords.Item1 + 0.5);
+                //int xMarkScreen = (int)(coords.Item1 + 0.5);
                 int yMarkScreen = (int)(coords.Item2 + 0.5);
 
                 gGraph_.DrawLine(gridPen, new Point(0, yMarkScreen), new Point(wBaseBox_, yMarkScreen));
@@ -884,7 +886,6 @@ namespace AnimGrapher
                 // search if name already exists
                 bool exists = false;
                 int index = -1;
-                int indexCombobox = 0;
                 foreach (CurveData cd in savedEquations_)
                 {
                     index++;
@@ -895,6 +896,7 @@ namespace AnimGrapher
                     }
                 }
 
+                int indexCombobox;
                 if (exists && index >= 0 && index < savedEquations_.Count)
                 {
                     string msg = "Equation \"" + name + "\" already exists." + Environment.NewLine;
@@ -1131,11 +1133,13 @@ namespace AnimGrapher
             string defaultName = (curCD.Name == "<New>") ? "Curve1" : curCD.Name;
 
             // save bitmap
-            SaveFileDialog dialog = new SaveFileDialog();
-            dialog.DefaultExt = ".jpg";
-            dialog.AddExtension = true;
-            dialog.Filter = "JPEG - Image files|*.jpg|BMP - Bitmap files|*.bmp";
-            dialog.FileName = defaultName;
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                DefaultExt = ".jpg",
+                AddExtension = true,
+                Filter = "JPEG - Image files|*.jpg|BMP - Bitmap files|*.bmp",
+                FileName = defaultName
+            };
 
             if (dialog.ShowDialog() == DialogResult.OK)
             {
@@ -1179,8 +1183,7 @@ namespace AnimGrapher
             // clear graph
             //if (bitmapGraph_ != null)
             //    bitmapGraph_.Dispose();
-            if (gGraph_ != null)
-                gGraph_.Clear(Color.Transparent);
+            gGraph_?.Clear(Color.Transparent);
 
             // initialize graphics
 
@@ -1736,8 +1739,8 @@ namespace AnimGrapher
                 double xDelta = x - mouseButtonOnGraphX_;
                 double yDelta = y - mouseButtonOnGraphY_;
 
-                bool updateX = moveDiscrete ? true : (xScreen != mouseButtonOnGraphXScreen_);
-                bool updateY = moveDiscrete ? true : (yScreen != mouseButtonOnGraphYScreen_);
+                bool updateX = moveDiscrete || (xScreen != mouseButtonOnGraphXScreen_);
+                bool updateY = moveDiscrete || (yScreen != mouseButtonOnGraphYScreen_);
 
                 if (updateX)
                 {

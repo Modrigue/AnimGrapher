@@ -30,24 +30,34 @@ namespace AnimGrapher
         {
             // add links to link labels
 
-            LinkLabel.Link link1 = new LinkLabel.Link();
-            link1.LinkData = "http://www.aleprojects.com/en/doc/parser";
+            LinkLabel.Link link1 = new LinkLabel.Link
+            {
+                LinkData = "http://www.aleprojects.com/en/doc/parser"
+            };
             linkLabel1.Links.Add(link1);
 
-            LinkLabel.Link link2 = new LinkLabel.Link();
-            link2.LinkData = "http://www.flaticon.com/authors/pixel-buddha";
+            LinkLabel.Link link2 = new LinkLabel.Link
+            {
+                LinkData = "http://www.flaticon.com/authors/pixel-buddha"
+            };
             linkLabel2.Links.Add(link2);
 
-            LinkLabel.Link link3 = new LinkLabel.Link();
-            link3.LinkData = "https://www.youtube.com/user/mburdis";
+            LinkLabel.Link link3 = new LinkLabel.Link
+            {
+                LinkData = "https://www.youtube.com/user/mburdis"
+            };
             linkLabel3.Links.Add(link3);
 
-            LinkLabel.Link link4 = new LinkLabel.Link();
-            link4.LinkData = "http://www.idius.net/about-ppp/";
+            LinkLabel.Link link4 = new LinkLabel.Link
+            {
+                LinkData = "http://www.idius.net/about-ppp/"
+            };
             linkLabel4.Links.Add(link4);
 
-            LinkLabel.Link link5 = new LinkLabel.Link();
-            link5.LinkData = "https://fr.pinterest.com/peneloped63/";
+            LinkLabel.Link link5 = new LinkLabel.Link
+            {
+                LinkData = "https://fr.pinterest.com/peneloped63/"
+            };
             linkLabel5.Links.Add(link5);
         }
 
