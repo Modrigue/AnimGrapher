@@ -113,25 +113,26 @@ namespace AnimGrapher
 
         public CurveData Copy()
         {
-            CurveData cdCopy = new CurveData();
+            CurveData cdCopy = new CurveData
+            {
+                Name = this.Name,
+                Type = this.Type,
 
-            cdCopy.Name = this.Name;
-            cdCopy.Type = this.Type;
+                Equation1 = this.Equation1,
+                Equation2 = this.Equation2,
 
-            cdCopy.Equation1 = this.Equation1;
-            cdCopy.Equation2 = this.Equation2;
+                Isometric = this.Isometric,
+                XVmin = this.XVmin,
+                XVmax = this.XVmax,
+                YVmin = this.YVmin,
+                YVmax = this.YVmax,
 
-            cdCopy.Isometric = this.Isometric;
-            cdCopy.XVmin = this.XVmin;
-            cdCopy.XVmax = this.XVmax;
-            cdCopy.YVmin = this.YVmin;
-            cdCopy.YVmax = this.YVmax;
+                Pmin = this.Pmin,
+                Pmax = this.Pmax,
+                Pstep = this.Pstep,
 
-            cdCopy.Pmin = this.Pmin;
-            cdCopy.Pmax = this.Pmax;
-            cdCopy.Pstep = this.Pstep;
-
-            cdCopy.Thickness = this.Thickness;
+                Thickness = this.Thickness
+            };
 
             return cdCopy;
         }
