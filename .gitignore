@@ -1,5 +1,44 @@
+# Build outputs (solution-wide)
 /AnimGrapher/bin
 /AnimGrapher/obj
-/*.suo
-/.vs
-/build
+artifacts/
+build/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.rsuser
+*.userosscache
+*.sln.docstates
+
+# Testing and coverage
+TestResults/
+*.coverage
+*.coveragexml
+BenchmarkDotNet.Artifacts/
+
+# NuGet
+# If using packages.config
+packages/
+# Built packages (optional to ignore)
+*.nupkg
+
+# ReSharper / Rider / StyleCop
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+StyleCop.Cache
+
+# VS Code (optional)
+.vscode/
+
+# OS cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs / temp
+*.log
+*.tmp
